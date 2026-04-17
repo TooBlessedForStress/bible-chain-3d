@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bible Chain 3D - Devnet</title>
+  <style>
+    body { margin:0; overflow:hidden; background:#0a0a1f; font-family:Arial, sans-serif; color:#ffd700; }
+    #stats { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.8); padding:15px; border-radius:8px; width:300px; z-index:100; }
+    #info { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); color:#fff; padding:15px 25px; border-radius:8px; display:none; z-index:200; max-width:420px; text-align:center; }
+    button { background:#ffd700; color:#111; border:none; padding:10px 16px; margin:5px; border-radius:6px; cursor:pointer; font-weight:bold; }
+  </style>
+</head>
+<body>
+  <div id="stats">
+    <h2 style="margin:0 0 12px 0;">🔥 Bible Chain (Devnet)</h2>
+    <p><strong>Total Blocks:</strong> <span id="total">0</span></p>
+    <p><strong>Verses Minted:</strong> <span id="verses">0</span> / 31,102</p>
+    <p><strong>Tokens Distributed:</strong> <span id="tokens">0</span> HOLY</p>
+    <p><strong>Progress:</strong> <span id="progress">0%</span></p>
+    <h3 style="margin:15px 0 8px 0;">Recent Blocks</h3>
+    <ul id="recent" style="margin:0; padding:0; list-style:none; max-height:160px; overflow-y:auto;"></ul>
+  </div>
+
+  <div id="info"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script>
+    let blocks = [];
+
+    // Three.js setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a1f);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+    const pointLight = new THREE.PointLight(0xffd700, 1.8, 100);
+    pointLight.position.set(0, 30, 30);
+    scene.add(pointLight);
+
+    let blockMeshes = [];
+    let autoRotate = true;
+
+    function createChain() {
+      blockMeshes.forEach(m => scene.remove(m));
+      blockMeshes = [];
+
+      const radius = 9;
+      const heightStep = 1.8;
+
+      blocks.forEach((block, i) => {
+        const angle = i * 0.35;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const y = i * heightStep - (blocks.length * heightStep / 2);
+
+        const geometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+        const material = new THREE.MeshPhongMaterial({ 
+          color: 0xffd700, 
+          emissive: 0xffaa00, 
+          shininess: 90 
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        mesh.userData = block;
+        scene.add(mesh);
+        blockMeshes.push(mesh);
+
+        if (i > 0) {
+          const prev = blockMeshes[i-1].position;
+          const lineGeo = new THREE.BufferGeometry().setFromPoints([prev, mesh.position]);
+          const lineMat = new THREE.LineBasicMaterial({ color: 0x66ffcc, transparent: true, opacity: 0.6 });
+          const line = new THREE.Line(lineGeo, lineMat);
+          scene.add(line);
+        }
+      });
+    }
+
+    camera.position.set(0, 8, 28);
+    camera.lookAt(0, 0, 0);
+
+    // Mouse controls
+    let isDragging = false;
+    let prevX = 0;
+    document.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; });
+    document.addEventListener('mouseup', () => isDragging = false);
+    document.addEventListener('mousemove', e => {
+      if (isDragging) {
+        scene.rotation.y += (e.clientX - prevX) * 0.003;
+        prevX = e.clientX;
+      }
+    });
+    document.addEventListener('wheel', e => {
+      camera.position.z += e.deltaY * 0.03;
+      camera.position.z = Math.max(12, Math.min(50, camera.position.z));
+    });
+
+    // Click to show verse info
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    renderer.domElement.addEventListener('click', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(blockMeshes);
+      if (intersects.length > 0) {
+        const data = intersects[0].object.userData;
+        const info = document.getElementById('info');
+        info.innerHTML = `
+          <strong>${data.ref} (${data.version})</strong><br><br>
+          ${data.text}<br><br>
+          Creator: <span style="color:#66ffcc">${data.creator}</span><br>
+          Block #${data.id} • ${data.timestamp}
+        `;
+        info.style.display = 'block';
+        setTimeout(() => info.style.display = 'none', 9000);
+      }
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (autoRotate) scene.rotation.y += 0.0008;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Load blocks from public devnet (no proxy needed)
+    async function loadBlocks() {
+      try {
+        const PROGRAM_ID = "YOUR_PROGRAM_ID_HERE";   // ← Change after you deploy Anchor program
+
+        const res = await fetch('https://api.devnet.solana.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "getProgramAccounts",
+            params: [PROGRAM_ID, { 
+              encoding: "jsonParsed", 
+              filters: [{ dataSize: 200 }] 
+            }]
+          })
+        });
+
+        const json = await res.json();
+
+        if (json.result && json.result.length > 0) {
+          blocks = json.result.map((acc, i) => ({
+            id: i + 1,
+            ref: "Genesis 1:1",
+            version: "KJV",
+            text: "First block on-chain Bible verse will appear here...",
+            creator: "Loading...",
+            timestamp: new Date().toLocaleDateString(),
+            reward: 100
+          }));
+        } else {
+          blocks = [{
+            id: 1,
+            ref: "No blocks yet",
+            version: "KJV",
+            text: "Deploy the Anchor program and create the first block to see the chain grow!",
+            creator: "System",
+            timestamp: new Date().toLocaleDateString(),
+            reward: 0
+          }];
+        }
+      } catch (err) {
+        console.error(err);
+        blocks = [{
+          id: 1,
+          ref: "Devnet Connection",
+          version: "KJV",
+          text: "Using public devnet RPC. Create blocks to see them here.",
+          creator: "System",
+          timestamp: new Date().toLocaleDateString(),
+          reward: 100
+        }];
+      }
+
+      createChain();
+      updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById('total').textContent = blocks.length;
+      document.getElementById('verses').textContent = blocks.length;
+      document.getElementById('tokens').textContent = blocks.length * 100;
+      document.getElementById('progress').textContent = ((blocks.length / 31102) * 100).toFixed(2) + '%';
+
+      let html = '';
+      blocks.slice(-5).reverse().forEach(b => {
+        html += `<li style="margin:5px 0;">#${b.id} • ${b.ref} <span style="color:#66ffcc">(${b.creator})</span></li>`;
+      });
+      document.getElementById('recent').innerHTML = html || '<li>No blocks yet</li>';
+    }
+
+    // Controls
+    const controls = document.createElement('div');
+    controls.style.position = 'absolute';
+    controls.style.bottom = '15px';
+    controls.style.right = '15px';
+    controls.style.zIndex = '100';
+    controls.innerHTML = `
+      <button onclick="autoRotate=!autoRotate">⏸ Auto-rotate</button>
+      <button onclick="scene.rotation.y=0; camera.position.set(0,8,28)">Reset View</button>
+      <button onclick="loadBlocks()">Refresh Chain</button>
+    `;
+    document.body.appendChild(controls);
+
+    // Start
+    loadBlocks();
+  </script>
+</body>
+</html>
