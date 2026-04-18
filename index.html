@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bible Chain 3D - Devnet</title>
   <style>
-    body { margin:0; overflow:hidden; background:#0a0a1f; font-family:Arial, sans-serif; color:#ffd700; }
+    body { margin:0; overflow:hidden; background:black; font-family:Arial, sans-serif; color:black; }
     #stats { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.8); padding:15px; border-radius:8px; width:300px; z-index:100; }
-    #info { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); color:#fff; padding:15px 25px; border-radius:8px; display:none; z-index:200; max-width:420px; text-align:center; }
-    button { background:#ffd700; color:#111; border:none; padding:10px 16px; margin:5px; border-radius:6px; cursor:pointer; font-weight:bold; }
+    #info { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); color:white; padding:15px 25px; border-radius:8px; display:none; z-index:200; max-width:420px; text-align:center; }
+    button { background:black; color:white; border:none; padding:10px 16px; margin:5px; border-radius:6px; cursor:pointer; font-weight:bold; }
   </style>
 </head>
 <body>
   <div id="stats">
-    <h2 style="margin:0 0 12px 0;">🔥 Bible Chain (Devnet)</h2>
+    <h2 style="margin:0 0 12px 0;"> Bible Chain (Devnet)</h2>
     <p><strong>Total Blocks:</strong> <span id="total">0</span></p>
     <p><strong>Verses Minted:</strong> <span id="verses">0</span> / 31,102</p>
     <p><strong>Tokens Distributed:</strong> <span id="tokens">0</span> HOLY</p>
@@ -30,7 +30,7 @@
 
     // Three.js setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a1f);
+    scene.background = new THREE.Color(black);
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -60,7 +60,7 @@
 
         const geometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
         const material = new THREE.MeshPhongMaterial({ 
-          color: 0xffd700, 
+          color: white, 
           emissive: 0xffaa00, 
           shininess: 90 
         });
@@ -73,7 +73,7 @@
         if (i > 0) {
           const prev = blockMeshes[i-1].position;
           const lineGeo = new THREE.BufferGeometry().setFromPoints([prev, mesh.position]);
-          const lineMat = new THREE.LineBasicMaterial({ color: 0x66ffcc, transparent: true, opacity: 0.6 });
+          const lineMat = new THREE.LineBasicMaterial({ color: white, transparent: true, opacity: 0.6 });
           const line = new THREE.Line(lineGeo, lineMat);
           scene.add(line);
         }
@@ -113,7 +113,7 @@
         info.innerHTML = `
           <strong>${data.ref} (${data.version})</strong><br><br>
           ${data.text}<br><br>
-          Creator: <span style="color:#66ffcc">${data.creator}</span><br>
+          Creator: <span style="color:white">${data.creator}</span><br>
           Block #${data.id} • ${data.timestamp}
         `;
         info.style.display = 'block';
@@ -201,7 +201,7 @@
 
       let html = '';
       blocks.slice(-5).reverse().forEach(b => {
-        html += `<li style="margin:5px 0;">#${b.id} • ${b.ref} <span style="color:#66ffcc">(${b.creator})</span></li>`;
+        html += `<li style="margin:5px 0;">#${b.id} • ${b.ref} <span style="color:white">(${b.creator})</span></li>`;
       });
       document.getElementById('recent').innerHTML = html || '<li>No blocks yet</li>';
     }
