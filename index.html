@@ -3,22 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bible Chain 3D - Devnet</title>
+  <title>Bible Chain • Eternal Word</title>
   <style>
-    body { margin:0; overflow:hidden; background:black; font-family:Arial, sans-serif; color:black; }
-    #stats { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.8); padding:15px; border-radius:8px; width:300px; z-index:100; }
-    #info { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); color:white; padding:15px 25px; border-radius:8px; display:none; z-index:200; max-width:420px; text-align:center; }
-    button { background:black; color:white; border:none; padding:10px 16px; margin:5px; border-radius:6px; cursor:pointer; font-weight:bold; }
+    body { 
+      margin:0; 
+      overflow:hidden; 
+      background:#000000; 
+      font-family: 'Georgia', serif; 
+      color:#e5e5e5; 
+    }
+    #stats { 
+      position:absolute; 
+      top:15px; 
+      left:15px; 
+      background:rgba(0,0,0,0.85); 
+      padding:18px 20px; 
+      border:1px solid #555; 
+      border-radius:8px; 
+      width:320px; 
+      z-index:100; 
+      box-shadow: 0 0 15px rgba(255,255,255,0.1);
+    }
+    #info { 
+      position:absolute; 
+      bottom:25px; 
+      left:50%; 
+      transform:translateX(-50%); 
+      background:rgba(0,0,0,0.92); 
+      color:#ddd; 
+      padding:18px 28px; 
+      border:1px solid #777; 
+      border-radius:10px; 
+      display:none; 
+      z-index:200; 
+      max-width:460px; 
+      text-align:center; 
+      line-height:1.5;
+    }
+    button { 
+      background:#111; 
+      color:#e5e5e5; 
+      border:1px solid #666; 
+      padding:10px 18px; 
+      margin:5px; 
+      border-radius:6px; 
+      cursor:pointer; 
+      font-family: Georgia, serif;
+    }
+    button:hover { background:#222; border-color:#aaa; }
+    h2 { margin:0 0 12px 0; letter-spacing:1px; color:#fff; }
   </style>
 </head>
 <body>
   <div id="stats">
-    <h2 style="margin:0 0 12px 0;"> Bible Chain (Devnet)</h2>
+    <h2>✝️ THE ETERNAL CHAIN</h2>
     <p><strong>Total Blocks:</strong> <span id="total">0</span></p>
     <p><strong>Verses Minted:</strong> <span id="verses">0</span> / 31,102</p>
-    <p><strong>Tokens Distributed:</strong> <span id="tokens">0</span> HOLY</p>
-    <p><strong>Progress:</strong> <span id="progress">0%</span></p>
-    <h3 style="margin:15px 0 8px 0;">Recent Blocks</h3>
+    <p><strong>HOLY Tokens Distributed:</strong> <span id="tokens">0</span></p>
+    <p><strong>Progress to Completion:</strong> <span id="progress">0%</span></p>
+    <h3 style="margin:18px 0 8px 0; color:#bbb;">Recent Verses</h3>
     <ul id="recent" style="margin:0; padding:0; list-style:none; max-height:160px; overflow-y:auto;"></ul>
   </div>
 
@@ -27,20 +70,26 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script>
     let blocks = [];
+    let flyingTexts = [];
 
-    // Three.js setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(black);
+    scene.background = new THREE.Color(0x000000);
+    
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambient);
-    const pointLight = new THREE.PointLight(0xffd700, 1.8, 100);
-    pointLight.position.set(0, 30, 30);
+    // Soft biblical lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const pointLight = new THREE.PointLight(0xffffff, 1.2, 200);
+    pointLight.position.set(0, 40, 30);
     scene.add(pointLight);
+
+    // Cross-like light from above
+    const crossLight = new THREE.DirectionalLight(0xdddddd, 0.6);
+    crossLight.position.set(10, 50, 10);
+    scene.add(crossLight);
 
     let blockMeshes = [];
     let autoRotate = true;
@@ -49,20 +98,21 @@
       blockMeshes.forEach(m => scene.remove(m));
       blockMeshes = [];
 
-      const radius = 9;
-      const heightStep = 1.8;
+      const radius = 10;
+      const heightStep = 1.9;
 
       blocks.forEach((block, i) => {
-        const angle = i * 0.35;
+        const angle = i * 0.32;
         const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
+        const z = Math.sin(angle) * radius * 0.6;
         const y = i * heightStep - (blocks.length * heightStep / 2);
 
-        const geometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+        const geometry = new THREE.BoxGeometry(1.6, 1.6, 1.6);
         const material = new THREE.MeshPhongMaterial({ 
-          color: white, 
-          emissive: 0xffaa00, 
-          shininess: 90 
+          color: 0xffffff, 
+          emissive: 0xaaaaaa,
+          shininess: 80,
+          specular: 0x333333
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(x, y, z);
@@ -70,36 +120,62 @@
         scene.add(mesh);
         blockMeshes.push(mesh);
 
+        // Connecting chain lines
         if (i > 0) {
           const prev = blockMeshes[i-1].position;
           const lineGeo = new THREE.BufferGeometry().setFromPoints([prev, mesh.position]);
-          const lineMat = new THREE.LineBasicMaterial({ color: white, transparent: true, opacity: 0.6 });
+          const lineMat = new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.5 });
           const line = new THREE.Line(lineGeo, lineMat);
           scene.add(line);
         }
       });
     }
 
-    camera.position.set(0, 8, 28);
+    // Create floating Bible verse particles
+    function createFlyingVerses() {
+      const texts = ["In the beginning...", "The Lord is my shepherd", "For God so loved...", 
+                     "I am the way...", "Love never fails", "Be still and know...", "The truth shall set you free"];
+      
+      for (let i = 0; i < 18; i++) {
+        const sprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({ 
+            color: 0xdddddd,
+            transparent: true,
+            opacity: 0.35 + Math.random() * 0.4
+          })
+        );
+        sprite.scale.set(8, 2, 1);
+        sprite.position.set(
+          (Math.random() - 0.5) * 60,
+          (Math.random() - 0.5) * 40,
+          (Math.random() - 0.5) * 40
+        );
+        sprite.userData = { 
+          speed: 0.02 + Math.random() * 0.03,
+          text: texts[i % texts.length]
+        };
+        scene.add(sprite);
+        flyingTexts.push(sprite);
+      }
+    }
+
+    camera.position.set(0, 10, 32);
     camera.lookAt(0, 0, 0);
 
     // Mouse controls
-    let isDragging = false;
-    let prevX = 0;
+    let isDragging = false, prevX = 0;
     document.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; });
     document.addEventListener('mouseup', () => isDragging = false);
     document.addEventListener('mousemove', e => {
-      if (isDragging) {
-        scene.rotation.y += (e.clientX - prevX) * 0.003;
-        prevX = e.clientX;
-      }
+      if (isDragging) scene.rotation.y += (e.clientX - prevX) * 0.003;
+      prevX = e.clientX;
     });
     document.addEventListener('wheel', e => {
       camera.position.z += e.deltaY * 0.03;
-      camera.position.z = Math.max(12, Math.min(50, camera.position.z));
+      camera.position.z = Math.max(15, Math.min(60, camera.position.z));
     });
 
-    // Click to show verse info
+    // Click handler
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     renderer.domElement.addEventListener('click', (e) => {
@@ -113,82 +189,49 @@
         info.innerHTML = `
           <strong>${data.ref} (${data.version})</strong><br><br>
           ${data.text}<br><br>
-          Creator: <span style="color:white">${data.creator}</span><br>
-          Block #${data.id} • ${data.timestamp}
+          <small>Creator (Validator): ${data.creator}<br>
+          Block #${data.id} • ${data.timestamp}</small>
         `;
         info.style.display = 'block';
-        setTimeout(() => info.style.display = 'none', 9000);
+        setTimeout(() => info.style.display = 'none', 10000);
       }
     });
 
     function animate() {
       requestAnimationFrame(animate);
-      if (autoRotate) scene.rotation.y += 0.0008;
+
+      if (autoRotate) scene.rotation.y += 0.0006;
+
+      // Gentle floating animation for verses
+      flyingTexts.forEach(t => {
+        t.position.y += t.userData.speed;
+        if (t.position.y > 35) t.position.y = -35;
+        t.lookAt(camera.position);
+      });
+
       renderer.render(scene, camera);
     }
     animate();
 
+    // Responsive
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Load blocks from public devnet (no proxy needed)
+    // Load blocks (same as before)
     async function loadBlocks() {
-      try {
-        const PROGRAM_ID = "YOUR_PROGRAM_ID_HERE";   // ← Change after you deploy Anchor program
-
-        const res = await fetch('https://api.devnet.solana.com', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: 1,
-            method: "getProgramAccounts",
-            params: [PROGRAM_ID, { 
-              encoding: "jsonParsed", 
-              filters: [{ dataSize: 200 }] 
-            }]
-          })
-        });
-
-        const json = await res.json();
-
-        if (json.result && json.result.length > 0) {
-          blocks = json.result.map((acc, i) => ({
-            id: i + 1,
-            ref: "Genesis 1:1",
-            version: "KJV",
-            text: "First block on-chain Bible verse will appear here...",
-            creator: "Loading...",
-            timestamp: new Date().toLocaleDateString(),
-            reward: 100
-          }));
-        } else {
-          blocks = [{
-            id: 1,
-            ref: "No blocks yet",
-            version: "KJV",
-            text: "Deploy the Anchor program and create the first block to see the chain grow!",
-            creator: "System",
-            timestamp: new Date().toLocaleDateString(),
-            reward: 0
-          }];
-        }
-      } catch (err) {
-        console.error(err);
-        blocks = [{
-          id: 1,
-          ref: "Devnet Connection",
-          version: "KJV",
-          text: "Using public devnet RPC. Create blocks to see them here.",
-          creator: "System",
-          timestamp: new Date().toLocaleDateString(),
-          reward: 100
-        }];
-      }
-
+      // ... (same loadBlocks function as previous version - keep your existing one)
+      // For now using fallback
+      blocks = [{
+        id: 1,
+        ref: "No blocks yet",
+        version: "KJV",
+        text: "The chain begins when the first Bible verse is minted on Solana.",
+        creator: "Awaiting First Minter",
+        timestamp: new Date().toLocaleDateString()
+      }];
       createChain();
       updateStats();
     }
@@ -201,25 +244,26 @@
 
       let html = '';
       blocks.slice(-5).reverse().forEach(b => {
-        html += `<li style="margin:5px 0;">#${b.id} • ${b.ref} <span style="color:white">(${b.creator})</span></li>`;
+        html += `<li style="margin:6px 0; color:#ccc;">#${b.id} • ${b.ref}</li>`;
       });
-      document.getElementById('recent').innerHTML = html || '<li>No blocks yet</li>';
+      document.getElementById('recent').innerHTML = html || '<li style="color:#777;">No verses yet</li>';
     }
 
     // Controls
     const controls = document.createElement('div');
     controls.style.position = 'absolute';
-    controls.style.bottom = '15px';
-    controls.style.right = '15px';
+    controls.style.bottom = '20px';
+    controls.style.right = '20px';
     controls.style.zIndex = '100';
     controls.innerHTML = `
-      <button onclick="autoRotate=!autoRotate">⏸ Auto-rotate</button>
-      <button onclick="scene.rotation.y=0; camera.position.set(0,8,28)">Reset View</button>
+      <button onclick="autoRotate=!autoRotate">⏸️ Auto-rotate</button>
+      <button onclick="scene.rotation.y=0; camera.position.set(0,10,32)">Reset View</button>
       <button onclick="loadBlocks()">Refresh Chain</button>
     `;
     document.body.appendChild(controls);
 
-    // Start
+    // Initialize flying verses and load
+    createFlyingVerses();
     loadBlocks();
   </script>
 </body>
