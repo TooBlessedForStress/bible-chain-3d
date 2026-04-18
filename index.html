@@ -6,8 +6,31 @@
   <title>THE ETERNAL CHAIN</title>
   <style>
     body { margin:0; overflow:hidden; background:#000; font-family:Georgia, serif; color:#eee; }
-    #sidebar { position:absolute; top:0; right:0; width:380px; height:100%; background:rgba(15,15,15,0.96); border-left:1px solid #555; padding:40px 30px; overflow-y:auto; z-index:100; box-shadow: -15px 0 40px rgba(0,0,0,0.8); }
-    button { background:#fff; color:#000; border:none; padding:16px; margin:8px 0; border-radius:12px; font-weight:700; cursor:pointer; width:100%; transition:0.2s; }
+    #sidebar { 
+      position:absolute; 
+      top:0; 
+      right:0; 
+      width:380px; 
+      height:100%; 
+      background:rgba(15,15,15,0.96); 
+      border-left:1px solid #555; 
+      padding:40px 30px; 
+      overflow-y:auto; 
+      z-index:100; 
+      box-shadow: -15px 0 40px rgba(0,0,0,0.8); 
+    }
+    button { 
+      background:#fff; 
+      color:#000; 
+      border:none; 
+      padding:16px; 
+      margin:8px 0; 
+      border-radius:12px; 
+      font-weight:700; 
+      cursor:pointer; 
+      width:100%; 
+      transition:0.2s; 
+    }
     button:hover { background:#ddd; transform:scale(1.02); }
   </style>
 </head>
@@ -36,6 +59,8 @@
   <script>
     let scene, camera, renderer, blockMeshes = [];
     let autoRotate = true;
+    let isDragging = false;
+    let previousMouseX = 0;
 
     const exampleBlocks = [
       { ref: "Genesis 1:1" },
@@ -57,7 +82,7 @@
 
       // Cinematic lighting
       scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-      const keyLight = new THREE.PointLight(0xffffff, 2.2);
+      const keyLight = new THREE.PointLight(0xffffff, 2.4);
       keyLight.position.set(0, 80, 60);
       scene.add(keyLight);
 
@@ -71,7 +96,7 @@
       cross.rotation.y = 0.15;
       scene.add(cross);
 
-      // Blocks with pulsing
+      // Blocks
       const radius = 14;
       exampleBlocks.forEach((block, i) => {
         const angle = i * 0.29;
@@ -91,17 +116,31 @@
       camera.position.set(0, 25, 55);
       camera.lookAt(0, 0, 0);
 
+      // Mouse controls for navigation
+      document.addEventListener('mousedown', e => { isDragging = true; previousMouseX = e.clientX; });
+      document.addEventListener('mouseup', () => isDragging = false);
+      document.addEventListener('mousemove', e => {
+        if (isDragging) {
+          scene.rotation.y += (e.clientX - previousMouseX) * 0.003;
+          previousMouseX = e.clientX;
+        }
+      });
+      document.addEventListener('wheel', e => {
+        camera.position.z += e.deltaY * 0.05;
+        camera.position.z = Math.max(25, Math.min(90, camera.position.z));
+      });
+
       animate();
     }
 
     function animate() {
       requestAnimationFrame(animate);
 
-      // Slow elegant pulse
+      // Slow pulsing
       const pulse = 1 + Math.sin(Date.now() / 1200) * 0.06;
       blockMeshes.forEach(m => m.scale.setScalar(pulse));
 
-      if (autoRotate) scene.rotation.y += 0.0005;
+      if (autoRotate) scene.rotation.y += 0.0004;
 
       renderer.render(scene, camera);
     }
@@ -114,7 +153,7 @@
 
     // Sidebar functions
     function selectVersion(i) {
-      alert("Version " + (i+1) + " selected (demo)");
+      alert("Version selected (demo)");
     }
     function createBlock() {
       alert("Wallet connect + block creation coming soon");
