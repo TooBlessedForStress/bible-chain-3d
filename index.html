@@ -3,281 +3,228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bible Chain • Eternal Word</title>
+  <title>The Eternal Chain • On-Chain Bible Ledger</title>
   <style>
-    body { 
-      margin:0; 
-      overflow:hidden; 
-      background:#000000; 
-      font-family: 'Georgia', serif; 
-      color:#e5e5e5; 
-    }
-    #stats { 
-      position:absolute; 
-      top:15px; 
-      left:15px; 
-      background:rgba(0,0,0,0.85); 
-      padding:18px 20px; 
-      border:1px solid #555; 
-      border-radius:8px; 
-      width:320px; 
-      z-index:100; 
-      box-shadow: 0 0 15px rgba(255,255,255,0.1);
-    }
-    #info { 
-      position:absolute; 
-      bottom:25px; 
-      left:50%; 
-      transform:translateX(-50%); 
-      background:rgba(0,0,0,0.92); 
-      color:#ddd; 
-      padding:18px 28px; 
-      border:1px solid #777; 
-      border-radius:10px; 
-      display:none; 
-      z-index:200; 
-      max-width:460px; 
-      text-align:center; 
-      line-height:1.5;
-    }
-    button { 
-      background:#111; 
-      color:#e5e5e5; 
-      border:1px solid #666; 
-      padding:10px 18px; 
-      margin:5px; 
-      border-radius:6px; 
-      cursor:pointer; 
-      font-family: Georgia, serif;
-    }
-    button:hover { background:#222; border-color:#aaa; }
-    h2 { margin:0 0 12px 0; letter-spacing:1px; color:#fff; }
+    body { margin:0; overflow:hidden; background:#000000; font-family:'Georgia', serif; color:#e5e5e5; }
+    #ui { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100; }
+    #stats { position:absolute; top:20px; left:20px; background:rgba(10,10,10,0.92); border:1px solid #444; border-radius:12px; padding:20px; width:340px; pointer-events:auto; box-shadow:0 0 30px rgba(255,215,0,0.15); }
+    #header { position:absolute; top:20px; right:20px; background:rgba(10,10,10,0.9); border:1px solid #555; border-radius:12px; padding:12px 20px; font-size:14px; pointer-events:auto; }
+    #info { position:absolute; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.95); color:#ddd; padding:22px 30px; border:1px solid #666; border-radius:14px; display:none; z-index:200; max-width:520px; text-align:center; line-height:1.6; box-shadow:0 0 40px rgba(255,215,0,0.2); }
+    button { background:#111; color:#e5e5e5; border:1px solid #777; padding:10px 20px; margin:4px; border-radius:8px; cursor:pointer; font-family:Georgia, serif; }
+    button:hover { background:#222; border-color:#ffd700; }
+    .gold { color:#ffd700; }
   </style>
 </head>
 <body>
-  <div id="stats">
-    <h2>✝️ THE ETERNAL CHAIN</h2>
-    <p><strong>Total Blocks:</strong> <span id="total">0</span></p>
-    <p><strong>Verses Minted:</strong> <span id="verses">0</span> / 31,102</p>
-    <p><strong>HOLY Tokens Distributed:</strong> <span id="tokens">0</span></p>
-    <p><strong>Progress to Completion:</strong> <span id="progress">0%</span></p>
-    <h3 style="margin:18px 0 8px 0; color:#bbb;">Recent Verses</h3>
-    <ul id="recent" style="margin:0; padding:0; list-style:none; max-height:160px; overflow-y:auto;"></ul>
-  </div>
+  <div id="ui">
+    <!-- Header -->
+    <div id="header">
+      <strong>✝️ THE ETERNAL CHAIN</strong><br>
+      <span style="font-size:13px; opacity:0.7;">On-Chain Bible Ledger • Solana Devnet</span>
+    </div>
 
-  <div id="info"></div>
+    <!-- Stats -->
+    <div id="stats">
+      <h2 style="margin:0 0 16px 0; color:#ffd700;">LIVE CHAIN</h2>
+      <p><strong>Total Blocks:</strong> <span id="total" class="gold">0</span></p>
+      <p><strong>Verses Minted:</strong> <span id="verses" class="gold">0</span> / 31,102</p>
+      <p><strong>HOLY Tokens:</strong> <span id="tokens" class="gold">0</span></p>
+      <p><strong>Progress:</strong> <span id="progress" class="gold">0%</span></p>
+      
+      <input id="search" placeholder="Search verse reference..." style="width:100%; margin:15px 0; padding:10px; background:#111; border:1px solid #555; color:#ddd; border-radius:8px;" onkeyup="filterBlocks()">
+      
+      <h3 style="margin:20px 0 8px 0; color:#bbb;">Recent Verses</h3>
+      <ul id="recent" style="margin:0; padding:0; list-style:none; max-height:180px; overflow-y:auto;"></ul>
+    </div>
+
+    <!-- Info popup -->
+    <div id="info"></div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script>
-    let blocks = [];
-    let blockMeshes = [];
-    let autoRotate = true;
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    // Soft biblical lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const pointLight = new THREE.PointLight(0xffffff, 1.3, 200);
-    pointLight.position.set(0, 40, 30);
-    scene.add(pointLight);
-
-    // === SUBTLE GLOWING CROSS IN BACKGROUND ===
-    function createCross() {
-      const crossGroup = new THREE.Group();
-      
-      // Vertical beam
-      const vGeo = new THREE.PlaneGeometry(2, 60);
-      const vMat = new THREE.MeshBasicMaterial({ 
-        color: 0xaaaaaa, 
-        transparent: true, 
-        opacity: 0.12,
-        side: THREE.DoubleSide
-      });
-      const vertical = new THREE.Mesh(vGeo, vMat);
-      crossGroup.add(vertical);
-      
-      // Horizontal beam
-      const hGeo = new THREE.PlaneGeometry(40, 2);
-      const hMat = new THREE.MeshBasicMaterial({ 
-        color: 0xaaaaaa, 
-        transparent: true, 
-        opacity: 0.12,
-        side: THREE.DoubleSide
-      });
-      const horizontal = new THREE.Mesh(hGeo, hMat);
-      horizontal.position.y = 8;
-      crossGroup.add(horizontal);
-      
-      crossGroup.rotation.x = Math.PI / 2;
-      crossGroup.position.set(0, 0, -35);
-      scene.add(crossGroup);
-    }
-    createCross();
-
-    // Example blocks (so the chain looks populated immediately)
-    blocks = [
+    let blocks = [
       { id: 1, ref: "Genesis 1:1", version: "KJV", text: "In the beginning God created the heaven and the earth.", creator: "7x...a1b2", timestamp: "Apr 17, 2026" },
-      { id: 2, ref: "John 3:16", version: "KJV", text: "For God so loved the world, that he gave his only begotten Son.", creator: "9y...c3d4", timestamp: "Apr 17, 2026" },
+      { id: 2, ref: "John 3:16", version: "KJV", text: "For God so loved the world...", creator: "9y...c3d4", timestamp: "Apr 17, 2026" },
       { id: 3, ref: "Psalm 23:1", version: "KJV", text: "The Lord is my shepherd; I shall not want.", creator: "3z...e5f6", timestamp: "Apr 16, 2026" },
-      { id: 4, ref: "Romans 8:28", version: "KJV", text: "And we know that all things work together for good...", creator: "5k...g7h8", timestamp: "Apr 16, 2026" },
-      { id: 5, ref: "Philippians 4:13", version: "KJV", text: "I can do all things through Christ who strengthens me.", creator: "2m...i9j0", timestamp: "Apr 15, 2026" },
+      { id: 4, ref: "Romans 8:28", version: "KJV", text: "All things work together for good...", creator: "5k...g7h8", timestamp: "Apr 16, 2026" },
+      { id: 5, ref: "Philippians 4:13", version: "KJV", text: "I can do all things through Christ...", creator: "2m...i9j0", timestamp: "Apr 15, 2026" },
       { id: 6, ref: "Matthew 6:33", version: "KJV", text: "Seek ye first the kingdom of God...", creator: "8p...k1l2", timestamp: "Apr 15, 2026" }
     ];
 
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Premium lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const keyLight = new THREE.PointLight(0xffffff, 1.4, 200);
+    keyLight.position.set(0, 40, 30);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0xddddff, 0.6);
+    rimLight.position.set(20, 30, -30);
+    scene.add(rimLight);
+
+    // Subtle glowing cross background
+    const crossGroup = new THREE.Group();
+    const v = new THREE.Mesh(new THREE.PlaneGeometry(3, 80), new THREE.MeshBasicMaterial({color:0xaaaaaa, transparent:true, opacity:0.08, side:THREE.DoubleSide}));
+    const h = new THREE.Mesh(new THREE.PlaneGeometry(60, 3), new THREE.MeshBasicMaterial({color:0xaaaaaa, transparent:true, opacity:0.08, side:THREE.DoubleSide}));
+    h.position.y = 12;
+    crossGroup.add(v); crossGroup.add(h);
+    crossGroup.rotation.x = Math.PI / 2;
+    crossGroup.position.z = -45;
+    scene.add(crossGroup);
+
+    let blockMeshes = [];
+    let autoRotate = true;
+
     function createChain() {
-      // Clear old meshes
       blockMeshes.forEach(m => scene.remove(m));
       blockMeshes = [];
 
-      const radius = 10;
-      const heightStep = 1.9;
+      const radius = 11;
+      const heightStep = 2.1;
 
       blocks.forEach((block, i) => {
-        const angle = i * 0.32;
+        const angle = i * 0.3;
         const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius * 0.6;
+        const z = Math.sin(angle) * radius * 0.7;
         const y = i * heightStep - (blocks.length * heightStep / 2);
 
-        const geometry = new THREE.BoxGeometry(1.6, 1.6, 1.6);
-        const material = new THREE.MeshPhongMaterial({ 
-          color: 0xffffff, 
-          emissive: 0xaaaaaa,
-          shininess: 80,
-          specular: 0x333333
-        });
-        const mesh = new THREE.Mesh(geometry, material);
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(1.8, 1.8, 1.8),
+          new THREE.MeshPhongMaterial({
+            color: 0xf8f8f8,
+            emissive: 0xddddaa,
+            shininess: 100,
+            specular: 0x333333
+          })
+        );
         mesh.position.set(x, y, z);
         mesh.userData = block;
         scene.add(mesh);
         blockMeshes.push(mesh);
 
-        // Verse reference text ON the block (using sprite)
+        // Verse text ON block
         const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 64;
+        canvas.width = 512; canvas.height = 128;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#111111';
-        ctx.fillRect(0, 0, 256, 64);
-        ctx.font = 'bold 28px Georgia';
+        ctx.fillStyle = '#111111'; ctx.fillRect(0,0,512,128);
+        ctx.font = 'bold 42px Georgia';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(block.ref, 128, 38);
+        ctx.fillText(block.ref, 256, 72);
 
-        const texture = new THREE.CanvasTexture(canvas);
-        const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        const sprite = new THREE.Sprite(spriteMat);
-        sprite.scale.set(3.2, 0.8, 1);
-        sprite.position.set(x, y + 1.3, z);
+        const tex = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({map: tex}));
+        sprite.scale.set(4.5, 1.1, 1);
+        sprite.position.set(x, y + 1.6, z);
         scene.add(sprite);
-        mesh.userData.label = sprite; // keep reference
+        mesh.userData.label = sprite;
 
-        // Connecting chain line
+        // Chain line
         if (i > 0) {
-          const prev = blockMeshes[i-1].position;
-          const lineGeo = new THREE.BufferGeometry().setFromPoints([prev, mesh.position]);
-          const lineMat = new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.5 });
-          const line = new THREE.Line(lineGeo, lineMat);
+          const line = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([blockMeshes[i-1].position, mesh.position]),
+            new THREE.LineBasicMaterial({color: 0xaaaaaa, transparent:true, opacity:0.6})
+          );
           scene.add(line);
         }
       });
     }
 
-    camera.position.set(0, 10, 32);
+    camera.position.set(0, 15, 45);
     camera.lookAt(0, 0, 0);
 
+    // Cinematic intro fly-in
+    let introTime = 0;
+    function introAnimate() {
+      introTime += 0.016;
+      if (introTime < 4) {
+        camera.position.z = 45 - introTime * 8;
+        camera.position.y = 15 - introTime * 2;
+        camera.lookAt(0, introTime * 3, 0);
+        requestAnimationFrame(introAnimate);
+      } else {
+        camera.position.set(0, 12, 38);
+        camera.lookAt(0, 0, 0);
+      }
+    }
+
     // Mouse controls
-    let isDragging = false, prevX = 0;
-    document.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; });
-    document.addEventListener('mouseup', () => isDragging = false);
+    let dragging = false, lastX = 0;
+    document.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; });
+    document.addEventListener('mouseup', () => dragging = false);
     document.addEventListener('mousemove', e => {
-      if (isDragging) scene.rotation.y += (e.clientX - prevX) * 0.003;
-      prevX = e.clientX;
+      if (dragging) scene.rotation.y += (e.clientX - lastX) * 0.003;
+      lastX = e.clientX;
     });
     document.addEventListener('wheel', e => {
-      camera.position.z += e.deltaY * 0.03;
-      camera.position.z = Math.max(15, Math.min(60, camera.position.z));
+      camera.position.z = Math.max(18, Math.min(70, camera.position.z + e.deltaY * 0.04));
     });
 
-    // Click handler (still works for full verse popup)
+    // Click popup
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    renderer.domElement.addEventListener('click', (e) => {
+    renderer.domElement.addEventListener('click', e => {
       mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(blockMeshes);
-      if (intersects.length > 0) {
-        const data = intersects[0].object.userData;
-        const info = document.getElementById('info');
-        info.innerHTML = `
-          <strong>${data.ref} (${data.version})</strong><br><br>
-          ${data.text}<br><br>
-          <small>Creator (Validator): ${data.creator}<br>
-          Block #${data.id} • ${data.timestamp}</small>
+      const hit = raycaster.intersectObjects(blockMeshes)[0];
+      if (hit) {
+        const d = hit.object.userData;
+        document.getElementById('info').innerHTML = `
+          <strong style="color:#ffd700">${d.ref} (${d.version})</strong><br><br>
+          ${d.text}<br><br>
+          <small>Creator: ${d.creator}<br>Block #${d.id} • ${d.timestamp}</small>
         `;
-        info.style.display = 'block';
-        setTimeout(() => info.style.display = 'none', 10000);
+        document.getElementById('info').style.display = 'block';
       }
     });
 
     function animate() {
       requestAnimationFrame(animate);
+      if (autoRotate) scene.rotation.y += 0.0005;
 
-      if (autoRotate) scene.rotation.y += 0.0006;
-
-      // Slow pulsing effect on every block
-      const pulse = 1 + Math.sin(Date.now() / 900) * 0.08;
-      blockMeshes.forEach(mesh => {
-        mesh.scale.setScalar(pulse);
-      });
+      const pulse = 1 + Math.sin(Date.now() / 1100) * 0.06;
+      blockMeshes.forEach(m => m.scale.setScalar(pulse));
 
       renderer.render(scene, camera);
     }
-    animate();
-
-    // Responsive
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
 
     function updateStats() {
       document.getElementById('total').textContent = blocks.length;
       document.getElementById('verses').textContent = blocks.length;
-      document.getElementById('tokens').textContent = blocks.length * 100;
+      document.getElementById('tokens').textContent = (blocks.length * 100).toLocaleString();
       document.getElementById('progress').textContent = ((blocks.length / 31102) * 100).toFixed(2) + '%';
-
-      let html = '';
-      blocks.slice(-5).reverse().forEach(b => {
-        html += `<li style="margin:6px 0; color:#ccc;">#${b.id} • ${b.ref}</li>`;
-      });
-      document.getElementById('recent').innerHTML = html || '<li style="color:#777;">No verses yet</li>';
+      document.getElementById('recent').innerHTML = blocks.slice(-5).reverse().map(b => 
+        `<li style="margin:6px 0;color:#ccc">#${b.id} • ${b.ref}</li>`
+      ).join('');
     }
 
     // Controls
-    const controls = document.createElement('div');
-    controls.style.position = 'absolute';
-    controls.style.bottom = '20px';
-    controls.style.right = '20px';
-    controls.style.zIndex = '100';
-    controls.innerHTML = `
-      <button onclick="autoRotate=!autoRotate">⏸️ Auto-rotate</button>
-      <button onclick="scene.rotation.y=0; camera.position.set(0,10,32)">Reset View</button>
-      <button onclick="loadBlocks()">Refresh Chain</button>
+    const controlsHTML = `
+      <button onclick="autoRotate=!autoRotate">⏸ Auto-rotate</button>
+      <button onclick="scene.rotation.y=0; camera.position.set(0,12,38)">Reset View</button>
+      <button onclick="document.documentElement.requestFullscreen()">⛶ Fullscreen</button>
     `;
-    document.body.appendChild(controls);
+    const ctrlDiv = document.createElement('div');
+    ctrlDiv.style.position = 'absolute';
+    ctrlDiv.style.bottom = '25px';
+    ctrlDiv.style.right = '25px';
+    ctrlDiv.style.zIndex = '100';
+    ctrlDiv.innerHTML = controlsHTML;
+    document.body.appendChild(ctrlDiv);
 
-    // Start with the example blocks
+    // Start
     createChain();
     updateStats();
+    introAnimate();
+    animate();
   </script>
 </body>
 </html>
