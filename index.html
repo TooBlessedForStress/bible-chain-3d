@@ -6,23 +6,21 @@
   <title>THE ETERNAL CHAIN</title>
   <style>
     body { margin:0; overflow:hidden; background:#000; font-family:Georgia, serif; color:#eee; }
-    #sidebar { position:absolute; top:0; right:0; width:400px; height:100%; background:rgba(15,15,15,0.95); border-left:1px solid #444; padding:40px 30px; overflow-y:auto; z-index:100; box-shadow: -10px 0 30px rgba(0,0,0,0.6); }
-    button { background:#fff; color:#000; border:none; padding:16px 24px; margin:6px 0; border-radius:12px; font-weight:700; cursor:pointer; width:100%; }
-    button:hover { background:#ddd; }
+    #sidebar { position:absolute; top:0; right:0; width:380px; height:100%; background:rgba(15,15,15,0.96); border-left:1px solid #555; padding:40px 30px; overflow-y:auto; z-index:100; box-shadow: -15px 0 40px rgba(0,0,0,0.8); }
+    button { background:#fff; color:#000; border:none; padding:16px; margin:8px 0; border-radius:12px; font-weight:700; cursor:pointer; width:100%; transition:0.2s; }
+    button:hover { background:#ddd; transform:scale(1.02); }
   </style>
 </head>
 <body>
   <div id="sidebar">
-    <h1 style="font-size:28px; margin:0 0 8px 0;">THE ETERNAL CHAIN</h1>
-    <p style="opacity:0.7;">Mint a Bible verse • Permanently recorded on Solana</p>
+    <h1 style="font-size:28px; margin:0 0 10px 0;">THE ETERNAL CHAIN</h1>
+    <p style="opacity:0.7; margin-bottom:30px;">Mint Bible verses permanently on Solana</p>
 
-    <div style="margin:40px 0 20px 0;">
-      <p style="text-xs opacity:0.6; margin-bottom:10px;">SELECT VERSION</p>
-      <div style="display:flex; gap:8px;">
-        <button onclick="selectVersion(0)" style="background:#fff; color:#000;">KJV</button>
-        <button onclick="selectVersion(1)">ASV</button>
-        <button onclick="selectVersion(2)">WEB</button>
-      </div>
+    <p style="text-xs opacity:0.6; margin-bottom:10px;">SELECT VERSION</p>
+    <div style="display:flex; gap:8px; margin-bottom:30px;">
+      <button onclick="selectVersion(0)">KJV</button>
+      <button onclick="selectVersion(1)">ASV</button>
+      <button onclick="selectVersion(2)">WEB</button>
     </div>
 
     <div style="background:#222; padding:20px; border-radius:12px; min-height:160px;">
@@ -36,17 +34,16 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script>
-    let scene, camera, renderer;
-    let blockMeshes = [];
+    let scene, camera, renderer, blockMeshes = [];
     let autoRotate = true;
 
-    const blocks = [
-      { ref: "Genesis 1:1", version: "KJV" },
-      { ref: "John 3:16", version: "KJV" },
-      { ref: "Psalm 23:1", version: "KJV" },
-      { ref: "Romans 8:28", version: "KJV" },
-      { ref: "Philippians 4:13", version: "KJV" },
-      { ref: "Matthew 6:33", version: "KJV" }
+    const exampleBlocks = [
+      { ref: "Genesis 1:1" },
+      { ref: "John 3:16" },
+      { ref: "Psalm 23:1" },
+      { ref: "Romans 8:28" },
+      { ref: "Philippians 4:13" },
+      { ref: "Matthew 6:33" }
     ];
 
     function init() {
@@ -58,11 +55,11 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      // Lighting
+      // Cinematic lighting
       scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-      const light = new THREE.PointLight(0xffffff, 2.2);
-      light.position.set(0, 80, 60);
-      scene.add(light);
+      const keyLight = new THREE.PointLight(0xffffff, 2.2);
+      keyLight.position.set(0, 80, 60);
+      scene.add(keyLight);
 
       // Vertical 3D Cross
       const cross = new THREE.Group();
@@ -74,9 +71,9 @@
       cross.rotation.y = 0.15;
       scene.add(cross);
 
-      // Blocks
+      // Blocks with pulsing
       const radius = 14;
-      blocks.forEach((block, i) => {
+      exampleBlocks.forEach((block, i) => {
         const angle = i * 0.29;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius * 0.7;
@@ -84,14 +81,14 @@
 
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(2.3, 2.3, 2.3),
-          new THREE.MeshPhongMaterial({color:0xffffff, emissive:0xcccccc, shininess:120})
+          new THREE.MeshPhongMaterial({color:0xffffff, emissive:0xcccccc, shininess:130})
         );
         mesh.position.set(x, y, z);
         scene.add(mesh);
         blockMeshes.push(mesh);
       });
 
-      camera.position.set(0, 22, 52);
+      camera.position.set(0, 25, 55);
       camera.lookAt(0, 0, 0);
 
       animate();
@@ -100,8 +97,11 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      const pulse = 1 + Math.sin(Date.now() / 1100) * 0.07;
+      // Slow elegant pulse
+      const pulse = 1 + Math.sin(Date.now() / 1200) * 0.06;
       blockMeshes.forEach(m => m.scale.setScalar(pulse));
+
+      if (autoRotate) scene.rotation.y += 0.0005;
 
       renderer.render(scene, camera);
     }
@@ -112,12 +112,12 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Simple sidebar functions
+    // Sidebar functions
     function selectVersion(i) {
-      alert("Version selected (demo)");
+      alert("Version " + (i+1) + " selected (demo)");
     }
     function createBlock() {
-      alert("Wallet connect + block creation would happen here");
+      alert("Wallet connect + block creation coming soon");
     }
 
     init();
