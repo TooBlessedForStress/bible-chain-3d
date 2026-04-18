@@ -32,6 +32,7 @@
       transition:0.2s; 
     }
     button:hover { background:#ddd; transform:scale(1.02); }
+    .stats { font-size:13px; opacity:0.7; }
   </style>
 </head>
 <body>
@@ -39,7 +40,9 @@
     <h1 style="font-size:28px; margin:0 0 10px 0;">THE ETERNAL CHAIN</h1>
     <p style="opacity:0.7; margin-bottom:30px;">Mint Bible verses permanently on Solana</p>
 
-    <p style="text-xs opacity:0.6; margin-bottom:10px;">SELECT VERSION</p>
+    <div class="stats">Total Blocks: <span id="total">6</span> | Progress: <span id="progress">0.02%</span></div>
+
+    <p style="text-xs opacity:0.6; margin:30px 0 10px 0;">SELECT VERSION</p>
     <div style="display:flex; gap:8px; margin-bottom:30px;">
       <button onclick="selectVersion(0)">KJV</button>
       <button onclick="selectVersion(1)">ASV</button>
@@ -80,13 +83,13 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      // Cinematic lighting
-      scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+      // Premium cinematic lighting (like Solana Compass)
+      scene.add(new THREE.AmbientLight(0xffffff, 0.3));
       const keyLight = new THREE.PointLight(0xffffff, 2.4);
       keyLight.position.set(0, 80, 60);
       scene.add(keyLight);
 
-      // Vertical 3D Cross
+      // Vertical 3D Cross - more dramatic and 3D
       const cross = new THREE.Group();
       const v = new THREE.Mesh(new THREE.BoxGeometry(6, 160, 6), new THREE.MeshPhongMaterial({color:0xeeeeee, emissive:0xaaaaaa, transparent:true, opacity:0.25}));
       const h = new THREE.Mesh(new THREE.BoxGeometry(80, 6, 6), new THREE.MeshPhongMaterial({color:0xeeeeee, emissive:0xaaaaaa, transparent:true, opacity:0.25}));
@@ -96,8 +99,8 @@
       cross.rotation.y = 0.15;
       scene.add(cross);
 
-      // Blocks
-      const radius = 14;
+      // Blocks with better scale
+      const radius = 14.5;
       exampleBlocks.forEach((block, i) => {
         const angle = i * 0.29;
         const x = Math.cos(angle) * radius;
@@ -116,12 +119,12 @@
       camera.position.set(0, 25, 55);
       camera.lookAt(0, 0, 0);
 
-      // Mouse controls for navigation
+      // Mouse navigation (like Solana Compass)
       document.addEventListener('mousedown', e => { isDragging = true; previousMouseX = e.clientX; });
       document.addEventListener('mouseup', () => isDragging = false);
       document.addEventListener('mousemove', e => {
         if (isDragging) {
-          scene.rotation.y += (e.clientX - previousMouseX) * 0.003;
+          scene.rotation.y += (e.clientX - previousMouseX) * 0.0035;
           previousMouseX = e.clientX;
         }
       });
@@ -136,7 +139,7 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      // Slow pulsing
+      // Slow elegant pulse
       const pulse = 1 + Math.sin(Date.now() / 1200) * 0.06;
       blockMeshes.forEach(m => m.scale.setScalar(pulse));
 
