@@ -25,12 +25,11 @@
     }
     .nav {
       position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 12px; overflow-x: auto; padding: 12px 20px; background: rgba(10,10,10,0.95);
-      border: 1px solid #333; border-radius: 9999px; pointer-events: auto; max-width: 90%;
+      display: flex; gap: 20px; pointer-events: auto;
     }
     button {
-      background: #111; color: white; border: 1px solid #444; padding: 12px 24px; border-radius: 9999px;
-      font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s;
+      background: #111; color: white; border: 1px solid #444; padding: 14px 32px; border-radius: 9999px;
+      font-weight: 600; cursor: pointer; font-size: 1.1rem; transition: all 0.2s;
     }
     button:hover { background: #222; transform: translateY(-2px); }
     .active { background: white !important; color: black !important; }
@@ -57,7 +56,11 @@
       <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
-    <div class="nav" id="nav-buttons"></div>
+    <!-- Next / Previous buttons -->
+    <div class="nav">
+      <button onclick="prevBlock()" style="padding:14px 24px;">← Previous</button>
+      <button onclick="nextBlock()" style="padding:14px 24px;">Next →</button>
+    </div>
 
     <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); font-size:0.8rem; opacity:0.5; white-space:nowrap;">
       ETERNAL ON-CHAIN BIBLE VERSE CHAIN • SOLANA DEVNET
@@ -105,18 +108,15 @@
       });
 
       animate();
-      updateNavButtons();
     }
 
     function createHolyBeam() {
-      // Central core
       const coreGeo = new THREE.CylinderGeometry(0.65, 0.85, 110, 64);
       const coreMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.95 });
       const core = new THREE.Mesh(coreGeo, coreMat);
       core.position.y = -18;
       scene.add(core);
 
-      // Misty base
       const baseGeo = new THREE.PlaneGeometry(28, 28);
       const baseMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
       const base = new THREE.Mesh(baseGeo, baseMat);
@@ -124,17 +124,12 @@
       base.position.y = -37;
       scene.add(base);
 
-      // Hundreds of individual light beams firing upward
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
         const rayMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.7 });
         const ray = new THREE.Mesh(rayGeo, rayMat);
-        ray.position.set(
-          (Math.random() - 0.5) * 4,
-          -50 + i * 0.9,
-          (Math.random() - 0.5) * 4
-        );
+        ray.position.set((Math.random() - 0.5) * 4, -50 + i * 0.9, (Math.random() - 0.5) * 4);
         ray.userData = { speed: 0.6 + Math.random() * 0.9 };
         scene.add(ray);
         rays.push(ray);
@@ -175,7 +170,7 @@
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(count * 3);
       for (let i = 0; i < count * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * 70;
+        positions[i]     = (Math.random() - 0.5) * 70;
         positions[i + 1] = Math.random() * -140 - 40;
         positions[i + 2] = (Math.random() - 0.5) * 65;
       }
@@ -215,29 +210,33 @@
       renderer.render(scene, camera);
     }
 
-    function updateNavButtons() {
-      const nav = document.getElementById('nav-buttons');
-      nav.innerHTML = '';
-      blocks.forEach((block, index) => {
-        const btn = document.createElement('button');
-        btn.textContent = `BLOCK ${String(index + 1).padStart(2, '0')} — ${block.reference}`;
-        btn.onclick = () => focusBlock(index);
-        if (index === currentIndex) {
-          btn.style.background = '#fff';
-          btn.style.color = '#000';
-        }
-        nav.appendChild(btn);
-      });
-    }
-
     function focusBlock(index) {
-      currentIndex = index;
-      const targetY = index * -2.8;
-      camera.position.set(6, targetY + 15, 30);
-      controls.target.set(0, targetY, 0);
-      controls.update();
+      currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
+      const block = blocks[currentIndex];
+      if (block && block.mesh) {
+        const target = block.mesh.position;
+        camera.position.set(target.x + 8, target.y + 4, target.z + 12);
+        controls.target.copy(target);
+        controls.update();
+      }
       updateNavButtons();
     }
+
+    function updateNavButtons() {
+      const nav = document.getElementById('nav-buttons');
+      nav.innerHTML = `
+        <button onclick="prevBlock()" style="padding:14px 24px;">← Previous</button>
+        <button onclick="nextBlock()" style="padding:14px 24px;">Next →</button>
+      `;
+    }
+
+    window.prevBlock = function() {
+      focusBlock(currentIndex - 1);
+    };
+
+    window.nextBlock = function() {
+      focusBlock(currentIndex + 1);
+    };
 
     window.createNewBlock = function() {
       const refs = ["Genesis 1:1", "John 3:16", "Psalm 23:1", "Matthew 6:9", "Romans 8:28", "Philippians 4:13"];
