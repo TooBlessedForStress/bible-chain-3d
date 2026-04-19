@@ -101,7 +101,7 @@
         <option value="ASV">American Standard Version (ASV)</option>
         <option value="WEB">World English Bible (WEB)</option>
       </select>
-      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;"> CREATE NEW BLOCK +10 HOLY</button>
+      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
     <div class="nav">
@@ -180,23 +180,24 @@
       core.position.y = -18;
       scene.add(core);
 
-      // === OPEN BIBLE NOW POSITIONED AT THE BASE OF THE BEAM ===
-      const bookY = -72;   // ← moved all the way to the bottom of the beam
+      // === OPEN BIBLE NOW CORRECTLY POSITIONED AT THE BASE OF THE BEAM ===
+      const bookY = -71;   // exactly at the bottom of the beam
 
-      // Thick leather-like covers
+      // Left cover
       const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
       const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8 });
       const leftCover = new THREE.Mesh(coverGeo, coverMat);
-      leftCover.rotation.set(Math.PI / 2, -0.65, 0);
-      leftCover.position.set(-6.5, bookY, 0);
+      leftCover.rotation.set(Math.PI / 2, -0.75, 0);
+      leftCover.position.set(-7, bookY, 0);
       scene.add(leftCover);
 
+      // Right cover
       const rightCover = new THREE.Mesh(coverGeo, coverMat);
-      rightCover.rotation.set(Math.PI / 2, 0.65, 0);
-      rightCover.position.set(6.5, bookY, 0);
+      rightCover.rotation.set(Math.PI / 2, 0.75, 0);
+      rightCover.position.set(7, bookY, 0);
       scene.add(rightCover);
 
-      // Book spine with raised bands
+      // Spine
       const spineGeo = new THREE.BoxGeometry(1.8, 18, 2.2);
       const spineMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
       const spine = new THREE.Mesh(spineGeo, spineMat);
@@ -204,6 +205,7 @@
       spine.rotation.x = Math.PI / 2;
       scene.add(spine);
 
+      // Spine bands
       const bandMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
       for (let i = 0; i < 3; i++) {
         const band = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.2, 2.3), bandMat);
@@ -212,23 +214,23 @@
         scene.add(band);
       }
 
-      // 25 fanned inner pages
+      // Fanned inner pages
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
       for (let i = 0; i < 25; i++) {
         const pageGeo = new THREE.PlaneGeometry(13.2, 17);
         const page = new THREE.Mesh(pageGeo, pageMat);
         const angle = -0.55 + (i * 0.045);
         page.rotation.set(Math.PI / 2, angle, 0);
-        page.position.set(-2 + i * 0.18, bookY + 0.4 + i * 0.03, i * 0.08);
+        page.position.set(-2 + i * 0.18, bookY + 0.5 + i * 0.03, i * 0.025);
         scene.add(page);
       }
 
-      // Detailed page text lines
+      // Page text lines
       const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
       for (let i = 0; i < 25; i++) {
         const angle = -0.55 + (i * 0.045);
-        const pageZ = i * 0.08;
-        const pageY = bookY + 0.4 + i * 0.03;
+        const pageZ = i * 0.025;
+        const pageY = bookY + 0.5 + i * 0.03;
 
         for (let j = 0; j < 14; j++) {
           const points = [
@@ -360,11 +362,11 @@
       currentIndex = blocks.length - 1;
       updateNavButtons();
       focusBlock(currentIndex);
-      alert(` New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
+      alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
     };
 
     window.mockWalletConnect = function() {
-      alert(" Wallet connected (demo mode)");
+      alert("✅ Wallet connected (demo mode)");
     };
 
     function toggleDetails() {
