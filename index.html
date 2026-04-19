@@ -50,7 +50,7 @@
   <div id="canvas-container"></div>
 
   <div class="overlay">
-    <!-- Left Panel: Live Chain Data -->
+    <!-- Left Panel -->
     <div class="left-panel">
       <h3 style="margin-top:0; color:#f5e8c7;">Chain Live Data</h3>
       <div class="stat">
@@ -66,7 +66,6 @@
         <div id="verses-remaining" class="stat-value">31,102</div>
       </div>
 
-      <!-- Expandable Book Details -->
       <div style="margin-top:30px;">
         <div onclick="toggleDetails()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-top:1px solid #333;">
           <span>Minted Verses by Book</span>
@@ -102,7 +101,7 @@
       <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
-    <!-- Previous / Next buttons (same size) -->
+    <!-- Previous / Next (same size) -->
     <div class="nav">
       <button onclick="prevBlock()" style="padding:16px 32px;">← Previous</button>
       <button onclick="nextBlock()" style="padding:16px 32px;">Next →</button>
@@ -113,7 +112,7 @@
     </div>
   </div>
 
-  <!-- Modal for full block data -->
+  <!-- Modal -->
   <div id="modal" class="modal" onclick="if(event.target.id==='modal')closeModal()">
     <div class="modal-content" onclick="event.stopImmediatePropagation()">
       <button class="modal-close" onclick="closeModal()">×</button>
@@ -322,7 +321,6 @@
       }
     }
 
-    // Modal functions
     function showBlockData(index) {
       const block = blocks[index];
       if (!block) return;
