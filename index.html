@@ -70,6 +70,7 @@
     let currentIndex = 0;
     let rays = [];
     let particlesMesh;
+    let blockMeshes = [];
 
     function init() {
       const container = document.getElementById('canvas-container');
@@ -150,8 +151,8 @@
         { id: 6, reference: "Philippians 4:13" },
       ];
       currentIndex = blocks.length - 1;
+      blockMeshes = [];
 
-      // Create visible 3D blocks in helix
       blocks.forEach((block, i) => {
         const angle = i * 0.42;
         const radius = 10.5;
@@ -160,17 +161,12 @@
         const y = i * -2.8;
 
         const geometry = new THREE.BoxGeometry(1.95, 1.3, 1.1);
-        const material = new THREE.MeshStandardMaterial({ 
-          color: "#f5f0e8", 
-          metalness: 0.15, 
-          roughness: 0.85 
-        });
+        const material = new THREE.MeshStandardMaterial({ color: "#f5f0e8", metalness: 0.15, roughness: 0.85 });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(x, y, z);
         scene.add(mesh);
-
-        // Store mesh for later scaling/animation if needed
         block.mesh = mesh;
+        blockMeshes.push(mesh);
       });
     }
 
@@ -179,7 +175,7 @@
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(count * 3);
       for (let i = 0; i < count * 3; i += 3) {
-        positions[i]     = (Math.random() - 0.5) * 70;
+        positions[i] = (Math.random() - 0.5) * 70;
         positions[i + 1] = Math.random() * -140 - 40;
         positions[i + 2] = (Math.random() - 0.5) * 65;
       }
@@ -200,14 +196,12 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      // Animate light beams
       rays.forEach(ray => {
         ray.position.y += ray.userData.speed || 0.8;
         if (ray.position.y > 50) ray.position.y = -50;
         ray.material.opacity = Math.max(0.15, 1 - Math.abs(ray.position.y) / 70);
       });
 
-      // Animate particles
       if (particlesMesh) {
         const pos = particlesMesh.geometry.attributes.position.array;
         for (let i = 1; i < pos.length; i += 3) {
@@ -227,16 +221,22 @@
       blocks.forEach((block, index) => {
         const btn = document.createElement('button');
         btn.textContent = `BLOCK ${String(index + 1).padStart(2, '0')} — ${block.reference}`;
-        btn.onclick = () => {
-          currentIndex = index;
-          console.log("Focusing block", index);
-        };
+        btn.onclick = () => focusBlock(index);
         if (index === currentIndex) {
           btn.style.background = '#fff';
           btn.style.color = '#000';
         }
         nav.appendChild(btn);
       });
+    }
+
+    function focusBlock(index) {
+      currentIndex = index;
+      const targetY = index * -2.8;
+      camera.position.set(6, targetY + 15, 30);
+      controls.target.set(0, targetY, 0);
+      controls.update();
+      updateNavButtons();
     }
 
     window.createNewBlock = function() {
@@ -246,7 +246,7 @@
       blocks.push(newBlock);
       currentIndex = blocks.length - 1;
       updateNavButtons();
-      console.log("New block created");
+      focusBlock(currentIndex);
       alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
     };
 
