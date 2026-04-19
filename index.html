@@ -24,7 +24,7 @@
     }
     .stat { margin-bottom: 20px; }
     .stat-label { font-size: 0.85rem; opacity: 0.7; }
-    .stat-value { font-size: 1.6rem; font-weight: 700; color: #f5e8c7; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: #ffffff; }
 
     .controls {
       position: absolute; top: 100px; right: 40px; width: 320px; background: rgba(10,10,10,0.95);
@@ -56,7 +56,6 @@
   <div id="canvas-container"></div>
 
   <div class="overlay">
-    <!-- Header -->
     <div class="header">
       <div class="title">VERSECHAIN</div>
       <button onclick="mockWalletConnect()" style="background:#fff; color:#000; padding:12px 28px; border-radius:9999px; font-weight:700;">
@@ -64,9 +63,8 @@
       </button>
     </div>
 
-    <!-- Left Panel: Chain Live Data (below title) -->
     <div class="left-panel">
-      <h3 style="margin-top:0; color:#f5e8c7;">Chain Live Data</h3>
+      <h3 style="margin-top:0; color:#ffffff;">Chain Live Data</h3>
       <div class="stat">
         <div class="stat-label">Verses Created</div>
         <div id="verses-created" class="stat-value">6</div>
@@ -96,7 +94,6 @@
       </div>
     </div>
 
-    <!-- Right Controls (under wallet button) -->
     <div class="controls">
       <div style="font-size:0.9rem; letter-spacing:2px; opacity:0.7; margin-bottom:16px;">MINT NEW VERSE BLOCK</div>
       <select id="version-select" style="width:100%; padding:14px; background:#111; border:1px solid #444; color:white; border-radius:12px; margin-bottom:20px;">
@@ -107,7 +104,6 @@
       <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
-    <!-- Previous / Next buttons (same size) -->
     <div class="nav">
       <button onclick="prevBlock()" style="padding:16px 32px;">← Previous</button>
       <button onclick="nextBlock()" style="padding:16px 32px;">Next →</button>
@@ -118,16 +114,15 @@
     </div>
   </div>
 
-  <!-- Modal -->
   <div id="modal" class="modal" onclick="if(event.target.id==='modal')closeModal()">
     <div class="modal-content" onclick="event.stopImmediatePropagation()">
       <button class="modal-close" onclick="closeModal()">×</button>
       <h2 id="modal-reference" style="margin:0 0 12px; font-size:2rem;"></h2>
       <p id="modal-text" style="line-height:1.7; font-size:1.1rem; color:#ddd;"></p>
       <div style="margin-top:20px; font-size:0.9rem; opacity:0.7;">
-        <div>Minted by: <span id="modal-wallet" style="color:#f5e8c7;"></span></div>
+        <div>Minted by: <span id="modal-wallet" style="color:#ffffff;"></span></div>
         <div>Block Height: <span id="modal-height"></span></div>
-        <div>Reward: <span id="modal-reward" style="color:#f5e8c7;">10 HOLY</span></div>
+        <div>Reward: <span id="modal-reward" style="color:#ffffff;">10 HOLY</span></div>
       </div>
     </div>
   </div>
@@ -178,23 +173,32 @@
     }
 
     function createHolyBeam() {
+      // Central core - pure white
       const coreGeo = new THREE.CylinderGeometry(0.65, 0.85, 110, 64);
-      const coreMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.95 });
+      const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
       const core = new THREE.Mesh(coreGeo, coreMat);
       core.position.y = -18;
       scene.add(core);
 
-      const baseGeo = new THREE.PlaneGeometry(28, 28);
-      const baseMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
-      const base = new THREE.Mesh(baseGeo, baseMat);
-      base.rotation.x = Math.PI / 2;
-      base.position.y = -37;
-      scene.add(base);
+      // Misty base replaced with open Bible
+      const pageGeo = new THREE.PlaneGeometry(12, 18);
+      const pageMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
 
+      const leftPage = new THREE.Mesh(pageGeo, pageMat);
+      leftPage.rotation.set(Math.PI / 2, -0.3, 0);
+      leftPage.position.set(-3, -37, 0);
+      scene.add(leftPage);
+
+      const rightPage = new THREE.Mesh(pageGeo, pageMat);
+      rightPage.rotation.set(Math.PI / 2, 0.3, 0);
+      rightPage.position.set(3, -37, 0);
+      scene.add(rightPage);
+
+      // Hundreds of individual light beams firing upward
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
-        const rayMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.7 });
+        const rayMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
         const ray = new THREE.Mesh(rayGeo, rayMat);
         ray.position.set((Math.random() - 0.5) * 4, -50 + i * 0.9, (Math.random() - 0.5) * 4);
         ray.userData = { speed: 0.6 + Math.random() * 0.9 };
@@ -245,7 +249,7 @@
 
       const material = new THREE.PointsMaterial({
         size: 0.12,
-        color: 0xf5e8c7,
+        color: 0xffffff,
         transparent: true,
         opacity: 0.85,
         depthWrite: false
