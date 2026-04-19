@@ -150,10 +150,32 @@
         { id: 6, reference: "Philippians 4:13" },
       ];
       currentIndex = blocks.length - 1;
+
+      // Create visible 3D blocks in helix
+      blocks.forEach((block, i) => {
+        const angle = i * 0.42;
+        const radius = 10.5;
+        const x = Math.sin(angle) * radius;
+        const z = Math.cos(angle) * radius * 0.85;
+        const y = i * -2.8;
+
+        const geometry = new THREE.BoxGeometry(1.95, 1.3, 1.1);
+        const material = new THREE.MeshStandardMaterial({ 
+          color: "#f5f0e8", 
+          metalness: 0.15, 
+          roughness: 0.85 
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        scene.add(mesh);
+
+        // Store mesh for later scaling/animation if needed
+        block.mesh = mesh;
+      });
     }
 
     function createParticles() {
-      const count = 2400; // increased for more noticeable particles
+      const count = 2400;
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(count * 3);
       for (let i = 0; i < count * 3; i += 3) {
@@ -164,7 +186,7 @@
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
       const material = new THREE.PointsMaterial({
-        size: 0.12,           // larger and more visible
+        size: 0.12,
         color: 0xf5e8c7,
         transparent: true,
         opacity: 0.85,
@@ -189,7 +211,7 @@
       if (particlesMesh) {
         const pos = particlesMesh.geometry.attributes.position.array;
         for (let i = 1; i < pos.length; i += 3) {
-          pos[i] += 0.038; // faster, more noticeable movement
+          pos[i] += 0.038;
           if (pos[i] > 50) pos[i] = -140;
         }
         particlesMesh.geometry.attributes.position.needsUpdate = true;
