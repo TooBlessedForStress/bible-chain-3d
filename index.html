@@ -180,54 +180,78 @@
       core.position.y = -18;
       scene.add(core);
 
-      // === IMPROVED 3D OPEN BIBLE BASE ===
+      // === HIGHLY DETAILED OPEN 3D BIBLE BASE ===
       const bookY = -37;
-      const bookScale = 1.1;
 
-      // Book spine (thick vertical edge)
-      const spineGeo = new THREE.BoxGeometry(1.2, 18, 2);
+      // Thick leather-like covers (with thickness and slight bevel)
+      const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
+      const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8 });
+      const leftCover = new THREE.Mesh(coverGeo, coverMat);
+      leftCover.rotation.set(Math.PI / 2, -0.65, 0);
+      leftCover.position.set(-6.5, bookY, 0);
+      scene.add(leftCover);
+
+      const rightCover = new THREE.Mesh(coverGeo, coverMat);
+      rightCover.rotation.set(Math.PI / 2, 0.65, 0);
+      rightCover.position.set(6.5, bookY, 0);
+      scene.add(rightCover);
+
+      // Book spine (thick, with raised binding bands)
+      const spineGeo = new THREE.BoxGeometry(1.8, 18, 2.2);
       const spineMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
       const spine = new THREE.Mesh(spineGeo, spineMat);
       spine.position.set(0, bookY, 0);
       spine.rotation.x = Math.PI / 2;
       scene.add(spine);
 
-      // Left cover (slightly angled)
-      const coverGeo = new THREE.PlaneGeometry(14, 18);
-      const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8, side: THREE.DoubleSide });
-      const leftCover = new THREE.Mesh(coverGeo, coverMat);
-      leftCover.rotation.set(Math.PI / 2, -0.6, 0);
-      leftCover.position.set(-6, bookY, 0);
-      scene.add(leftCover);
+      // Raised spine bands (3 bands for classic Bible look)
+      const bandMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
+      for (let i = 0; i < 3; i++) {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.2, 2.3), bandMat);
+        band.position.set(0, bookY - 6 + i * 5, 0);
+        band.rotation.x = Math.PI / 2;
+        scene.add(band);
+      }
 
-      // Right cover (slightly angled)
-      const rightCover = new THREE.Mesh(coverGeo, coverMat);
-      rightCover.rotation.set(Math.PI / 2, 0.6, 0);
-      rightCover.position.set(6, bookY, 0);
-      scene.add(rightCover);
-
-      // Multiple inner pages (fanned out for realistic open-book look)
+      // 25 fanned inner pages with realistic depth
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
-      for (let i = 0; i < 12; i++) {
-        const pageGeo = new THREE.PlaneGeometry(13, 17);
+      for (let i = 0; i < 25; i++) {
+        const pageGeo = new THREE.PlaneGeometry(13.2, 17);
         const page = new THREE.Mesh(pageGeo, pageMat);
-        const angle = -0.4 + (i * 0.07);
+        const angle = -0.55 + (i * 0.045); // wider fan
         page.rotation.set(Math.PI / 2, angle, 0);
-        page.position.set(-1 + i * 0.15, bookY + 0.2, 0);
+        page.position.set(-2 + i * 0.18, bookY + 0.4 + i * 0.03, i * 0.08); // depth offset
         scene.add(page);
       }
 
-      // Subtle page lines on the open pages
-      const lineMat = new THREE.LineBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
-      for (let i = 0; i < 12; i++) {
-        const points = [];
-        for (let j = 0; j < 8; j++) {
-          points.push(new THREE.Vector3(-5 + i * 0.2, bookY + 0.3, -8 + j * 2));
+      // Detailed page text lines (horizontal + margin lines)
+      const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
+      for (let i = 0; i < 25; i++) {
+        const angle = -0.55 + (i * 0.045);
+        const pageZ = i * 0.08;
+        const pageY = bookY + 0.4 + i * 0.03;
+
+        // Horizontal verse lines
+        for (let j = 0; j < 14; j++) {
+          const points = [
+            new THREE.Vector3(-6, pageY + 0.3 + j * 1.05, pageZ),
+            new THREE.Vector3(5.5, pageY + 0.3 + j * 1.05, pageZ)
+          ];
+          const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+          const line = new THREE.Line(lineGeo, lineMat);
+          line.rotation.set(Math.PI / 2, angle, 0);
+          scene.add(line);
         }
-        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-        const line = new THREE.Line(lineGeo, lineMat);
-        line.rotation.set(Math.PI / 2, -0.3, 0);
-        scene.add(line);
+
+        // Left margin line
+        const marginPoints = [
+          new THREE.Vector3(-5.2, pageY + 0.8, pageZ),
+          new THREE.Vector3(-5.2, pageY + 14.5, pageZ)
+        ];
+        const marginGeo = new THREE.BufferGeometry().setFromPoints(marginPoints);
+        const marginLine = new THREE.Line(marginGeo, lineMat);
+        marginLine.rotation.set(Math.PI / 2, angle, 0);
+        scene.add(marginLine);
       }
 
       // Hundreds of individual light beams firing upward
@@ -285,7 +309,7 @@
 
       const material = new THREE.PointsMaterial({
         size: 0.12,
-        color: 0xffffff,          // ← Pure white as requested
+        color: 0xffffff,
         transparent: true,
         opacity: 0.85,
         depthWrite: false
@@ -348,11 +372,11 @@
       currentIndex = blocks.length - 1;
       updateNavButtons();
       focusBlock(currentIndex);
-      alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
+      alert(` New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
     };
 
     window.mockWalletConnect = function() {
-      alert("✅ Wallet connected (demo mode)");
+      alert(" Wallet connected (demo mode)");
     };
 
     function toggleDetails() {
