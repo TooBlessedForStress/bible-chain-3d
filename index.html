@@ -101,7 +101,7 @@
         <option value="ASV">American Standard Version (ASV)</option>
         <option value="WEB">World English Bible (WEB)</option>
       </select>
-      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
+      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
     <div class="nav">
@@ -180,8 +180,8 @@
       core.position.y = -18;
       scene.add(core);
 
-      // === ALL BOOK ELEMENTS NOW EXACTLY AT THE BASE OF THE BEAM ===
-      const bookY = -72;   // spine and base of book sit exactly at the bottom of the beam
+      // === OPEN BIBLE WITH SPINE EXACTLY AT THE BASE OF THE BEAM ===
+      const bookY = -42;   // spine now sits precisely at the bottom of the beam
 
       // Left cover
       const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
@@ -214,11 +214,188 @@
         scene.add(band);
       }
 
-      // Fanned inner pages - now flush at base
+      // Fanned inner pages
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
       for (let i = 0; i < 25; i++) {
         const pageGeo = new THREE.PlaneGeometry(13.2, 17);
         const page = new THREE.Mesh(pageGeo, pageMat);
         const angle = -0.55 + (i * 0.045);
         page.rotation.set(Math.PI / 2, angle, 0);
-        page.position.set(-2 + i * 0.18,
+        page.position.set(-2 + i * 0.18, bookY + 0.5 + i * 0.03, i * 0.025);
+        scene.add(page);
+      }
+
+      // Page text lines
+      const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
+      for (let i = 0; i < 25; i++) {
+        const angle = -0.55 + (i * 0.045);
+        const pageZ = i * 0.025;
+        const pageY = bookY + 0.5 + i * 0.03;
+
+        for (let j = 0; j < 14; j++) {
+          const points = [
+            new THREE.Vector3(-6, pageY + 0.3 + j * 1.05, pageZ),
+            new THREE.Vector3(5.5, pageY + 0.3 + j * 1.05, pageZ)
+          ];
+          const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+          const line = new THREE.Line(lineGeo, lineMat);
+          line.rotation.set(Math.PI / 2, angle, 0);
+          scene.add(line);
+        }
+      }
+
+      // Hundreds of individual light beams firing upward
+      rays = [];
+      for (let i = 0; i < 140; i++) {
+        const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
+        const rayMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
+        const ray = new THREE.Mesh(rayGeo, rayMat);
+        ray.position.set((Math.random() - 0.5) * 4, -50 + i * 0.9, (Math.random() - 0.5) * 4);
+        ray.userData = { speed: 0.6 + Math.random() * 0.9 };
+        scene.add(ray);
+        rays.push(ray);
+      }
+    }
+
+    function createInitialBlocks() {
+      blocks = [
+        { id: 1, reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
+        { id: 2, reference: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." },
+        { id: 3, reference: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
+        { id: 4, reference: "Matthew 6:9", text: "Our Father which art in heaven, Hallowed be thy name." },
+        { id: 5, reference: "Romans 8:28", text: "And we know that all things work together for good..." },
+        { id: 6, reference: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." },
+      ];
+      currentIndex = blocks.length - 1;
+      blockMeshes = [];
+
+      blocks.forEach((block, i) => {
+        const angle = i * 0.42;
+        const radius = 10.5;
+        const x = Math.sin(angle) * radius;
+        const z = Math.cos(angle) * radius * 0.85;
+        const y = i * -2.8;
+
+        const geometry = new THREE.BoxGeometry(1.95, 1.3, 1.1);
+        const material = new THREE.MeshStandardMaterial({ color: "#f5f0e8", metalness: 0.15, roughness: 0.85 });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        scene.add(mesh);
+        block.mesh = mesh;
+        blockMeshes.push(mesh);
+      });
+    }
+
+    function createParticles() {
+      const count = 2400;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count * 3; i += 3) {
+        positions[i]     = (Math.random() - 0.5) * 70;
+        positions[i + 1] = Math.random() * -140 - 40;
+        positions[i + 2] = (Math.random() - 0.5) * 65;
+      }
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.12,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false
+      });
+
+      particlesMesh = new THREE.Points(geometry, material);
+      scene.add(particlesMesh);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      rays.forEach(ray => {
+        ray.position.y += ray.userData.speed || 0.8;
+        if (ray.position.y > 50) ray.position.y = -50;
+        ray.material.opacity = Math.max(0.15, 1 - Math.abs(ray.position.y) / 70);
+      });
+
+      if (particlesMesh) {
+        const pos = particlesMesh.geometry.attributes.position.array;
+        for (let i = 1; i < pos.length; i += 3) {
+          pos[i] += 0.038;
+          if (pos[i] > 50) pos[i] = -140;
+        }
+        particlesMesh.geometry.attributes.position.needsUpdate = true;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function focusBlock(index) {
+      currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
+      const block = blocks[currentIndex];
+      if (block && block.mesh) {
+        const target = block.mesh.position;
+        camera.position.set(target.x + 8, target.y + 4, target.z + 12);
+        controls.target.copy(target);
+        controls.update();
+      }
+      updateNavButtons();
+    }
+
+    function updateNavButtons() {
+      const nav = document.getElementById('nav-buttons');
+      nav.innerHTML = `
+        <button onclick="prevBlock()" style="padding:16px 32px;">← Previous</button>
+        <button onclick="nextBlock()" style="padding:16px 32px;">Next →</button>
+      `;
+    }
+
+    window.prevBlock = function() { focusBlock(currentIndex - 1); };
+    window.nextBlock = function() { focusBlock(currentIndex + 1); };
+
+    window.createNewBlock = function() {
+      const refs = ["Genesis 1:1", "John 3:16", "Psalm 23:1", "Matthew 6:9", "Romans 8:28", "Philippians 4:13"];
+      const newRef = refs[Math.floor(Math.random() * refs.length)];
+      const newBlock = { id: Date.now(), reference: newRef, text: "This is the full verse text for the new block. It was randomly selected from the Bible." };
+      blocks.push(newBlock);
+      currentIndex = blocks.length - 1;
+      updateNavButtons();
+      focusBlock(currentIndex);
+      alert(` New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
+    };
+
+    window.mockWalletConnect = function() {
+      alert(" Wallet connected (demo mode)");
+    };
+
+    function toggleDetails() {
+      const details = document.getElementById('book-details');
+      const icon = document.getElementById('expand-icon');
+      if (details.style.display === 'block') {
+        details.style.display = 'none';
+        icon.textContent = '▼';
+      } else {
+        details.style.display = 'block';
+        icon.textContent = '▲';
+      }
+    }
+
+    function showBlockData(index) {
+      const block = blocks[index];
+      if (!block) return;
+      document.getElementById('modal-reference').textContent = block.reference;
+      document.getElementById('modal-text').textContent = block.text || "Full verse text would appear here in a real implementation.";
+      document.getElementById('modal-wallet').textContent = "0x71C4...a3F2";
+      document.getElementById('modal-height').textContent = "Block #" + (1000000 + index);
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
