@@ -40,7 +40,6 @@
   <div id="canvas-container"></div>
 
   <div class="overlay">
-    <!-- Header -->
     <div class="header">
       <div class="title">VERSECHAIN</div>
       <button onclick="mockWalletConnect()" style="background:#fff; color:#000; padding:12px 28px; border-radius:9999px; font-weight:700;">
@@ -48,7 +47,6 @@
       </button>
     </div>
 
-    <!-- Right Control Panel -->
     <div class="controls">
       <div style="font-size:0.9rem; letter-spacing:2px; opacity:0.7; margin-bottom:16px;">MINT NEW VERSE BLOCK</div>
       <select id="version-select" style="width:100%; padding:14px; background:#111; border:1px solid #444; color:white; border-radius:12px; margin-bottom:20px;">
@@ -59,21 +57,19 @@
       <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
-    <!-- Bottom Navigation -->
     <div class="nav" id="nav-buttons"></div>
 
-    <!-- Footer -->
     <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); font-size:0.8rem; opacity:0.5; white-space:nowrap;">
       ETERNAL ON-CHAIN BIBLE VERSE CHAIN • SOLANA DEVNET
     </div>
   </div>
 
   <script>
-    // Scene setup
     let scene, camera, renderer, controls;
     let blocks = [];
     let currentIndex = 0;
     let rays = [];
+    let particlesMesh;
 
     function init() {
       const container = document.getElementById('canvas-container');
@@ -86,25 +82,19 @@
 
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
-      controls.dampingFactor = 0.08;
+      controls.dampingFactor = 0.1;
       controls.minDistance = 18;
       controls.maxDistance = 80;
 
       camera.position.set(8, 22, 35);
 
-      // Lights
       scene.add(new THREE.AmbientLight(0x555555, 0.6));
       const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
       dirLight.position.set(20, 55, 30);
       scene.add(dirLight);
 
-      // Holy Beam + rays
       createHolyBeam();
-
-      // Initial blocks
       createInitialBlocks();
-
-      // Particles
       createParticles();
 
       window.addEventListener('resize', () => {
@@ -133,7 +123,7 @@
       base.position.y = -37;
       scene.add(base);
 
-      // Hundreds of individual light beams
+      // Hundreds of individual light beams firing upward
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
@@ -163,48 +153,46 @@
     }
 
     function createParticles() {
-      const count = 1600;
+      const count = 2400; // increased for more noticeable particles
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(count * 3);
       for (let i = 0; i < count * 3; i += 3) {
-        positions[i]     = (Math.random() - 0.5) * 65;
-        positions[i + 1] = Math.random() * -130 - 35;
-        positions[i + 2] = (Math.random() - 0.5) * 60;
+        positions[i]     = (Math.random() - 0.5) * 70;
+        positions[i + 1] = Math.random() * -140 - 40;
+        positions[i + 2] = (Math.random() - 0.5) * 65;
       }
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
       const material = new THREE.PointsMaterial({
-        size: 0.065,
+        size: 0.12,           // larger and more visible
         color: 0xf5e8c7,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.85,
         depthWrite: false
       });
 
-      const points = new THREE.Points(geometry, material);
-      scene.add(points);
-
-      // Animation in animate() loop
-      window.particles = points;
+      particlesMesh = new THREE.Points(geometry, material);
+      scene.add(particlesMesh);
     }
 
     function animate() {
       requestAnimationFrame(animate);
 
-      // Animate rays
+      // Animate light beams
       rays.forEach(ray => {
         ray.position.y += ray.userData.speed || 0.8;
         if (ray.position.y > 50) ray.position.y = -50;
         ray.material.opacity = Math.max(0.15, 1 - Math.abs(ray.position.y) / 70);
       });
 
-      if (window.particles) {
-        const pos = window.particles.geometry.attributes.position.array;
+      // Animate particles
+      if (particlesMesh) {
+        const pos = particlesMesh.geometry.attributes.position.array;
         for (let i = 1; i < pos.length; i += 3) {
-          pos[i] += 0.032;
-          if (pos[i] > 50) pos[i] = -130;
+          pos[i] += 0.038; // faster, more noticeable movement
+          if (pos[i] > 50) pos[i] = -140;
         }
-        window.particles.geometry.attributes.position.needsUpdate = true;
+        particlesMesh.geometry.attributes.position.needsUpdate = true;
       }
 
       controls.update();
@@ -219,40 +207,31 @@
         btn.textContent = `BLOCK ${String(index + 1).padStart(2, '0')} — ${block.reference}`;
         btn.onclick = () => {
           currentIndex = index;
-          if (chainRef && chainRef.focusBlock) chainRef.focusBlock(index);
+          console.log("Focusing block", index);
         };
-        if (index === currentIndex) btn.style.background = '#fff';
-        if (index === currentIndex) btn.style.color = '#000';
+        if (index === currentIndex) {
+          btn.style.background = '#fff';
+          btn.style.color = '#000';
+        }
         nav.appendChild(btn);
       });
     }
 
-    // Mock create block
     window.createNewBlock = function() {
-      const version = document.getElementById('version-select') ? document.getElementById('version-select').value : 'KJV';
       const refs = ["Genesis 1:1", "John 3:16", "Psalm 23:1", "Matthew 6:9", "Romans 8:28", "Philippians 4:13"];
       const newRef = refs[Math.floor(Math.random() * refs.length)];
       const newBlock = { id: Date.now(), reference: newRef };
       blocks.push(newBlock);
       currentIndex = blocks.length - 1;
       updateNavButtons();
-      if (chainRef && chainRef.focusBlock) chainRef.focusBlock(currentIndex);
+      console.log("New block created");
       alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
     };
 
     window.mockWalletConnect = function() {
-      alert("✅ Wallet connected (demo mode)\n\nReal Solana connection will be added when the program is deployed.");
+      alert("✅ Wallet connected (demo mode)");
     };
 
-    // Global reference for focusBlock
-    window.chainRef = {
-      focusBlock: (index) => {
-        // Camera will be updated in the Three.js scene via the ref in a real setup
-        console.log("Focusing block", index);
-      }
-    };
-
-    // Start everything
     window.onload = init;
   </script>
 </body>
