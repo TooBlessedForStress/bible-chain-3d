@@ -27,13 +27,13 @@
     .stat-value { font-size: 1.6rem; font-weight: 700; color: #ffffff; }
 
     .controls {
-      position: absolute; top: 100px; right: 40px; width: 320px; background: rgba(10,10,10,0.95);
+      position: absolute; top: 170px; right: 40px; width: 320px; background: rgba(10,10,10,0.95);
       border: 1px solid #333; border-radius: 16px; padding: 24px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
 
     .nav {
       position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 20px; pointer-events: auto;
+      display: flex; gap: 60px; pointer-events: auto;
     }
     button {
       background: #111; color: white; border: 1px solid #444; padding: 16px 32px; border-radius: 9999px;
@@ -173,14 +173,12 @@
     }
 
     function createHolyBeam() {
-      // Central core - pure white
       const coreGeo = new THREE.CylinderGeometry(0.65, 0.85, 110, 64);
       const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
       const core = new THREE.Mesh(coreGeo, coreMat);
       core.position.y = -18;
       scene.add(core);
 
-      // Misty base replaced with open Bible
       const pageGeo = new THREE.PlaneGeometry(12, 18);
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
 
@@ -194,7 +192,6 @@
       rightPage.position.set(3, -37, 0);
       scene.add(rightPage);
 
-      // Hundreds of individual light beams firing upward
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
