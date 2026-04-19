@@ -3,166 +3,257 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>THE ETERNAL CHAIN</title>
+  <title>VERSECHAIN • Eternal Bible Chain</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
   <style>
-    body { margin:0; overflow:hidden; background:#000; font-family:Georgia, serif; color:#eee; }
-    #sidebar { 
-      position:absolute; 
-      top:0; 
-      right:0; 
-      width:380px; 
-      height:100%; 
-      background:rgba(15,15,15,0.96); 
-      border-left:1px solid #555; 
-      padding:40px 30px; 
-      overflow-y:auto; 
-      z-index:100; 
-      box-shadow: -15px 0 40px rgba(0,0,0,0.8); 
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body { margin:0; padding:0; overflow:hidden; background:#000; font-family:'Inter', system-ui, sans-serif; }
+    canvas { display:block; }
+    .overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+      color: white; display: flex; flex-direction: column;
     }
-    button { 
-      background:#fff; 
-      color:#000; 
-      border:none; 
-      padding:16px; 
-      margin:8px 0; 
-      border-radius:12px; 
-      font-weight:700; 
-      cursor:pointer; 
-      width:100%; 
-      transition:0.2s; 
+    .header {
+      padding: 30px 40px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+      display: flex; justify-content: space-between; align-items: center; pointer-events: auto;
     }
-    button:hover { background:#ddd; transform:scale(1.02); }
-    .stats { font-size:13px; opacity:0.7; }
+    .title { font-size: 2.8rem; font-weight: 900; letter-spacing: -2px; margin: 0; }
+    .controls {
+      position: absolute; top: 120px; right: 40px; width: 320px; background: rgba(10,10,10,0.95);
+      border: 1px solid #333; border-radius: 16px; padding: 24px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .nav {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px; overflow-x: auto; padding: 12px 20px; background: rgba(10,10,10,0.95);
+      border: 1px solid #333; border-radius: 9999px; pointer-events: auto; max-width: 90%;
+    }
+    button {
+      background: #111; color: white; border: 1px solid #444; padding: 12px 24px; border-radius: 9999px;
+      font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s;
+    }
+    button:hover { background: #222; transform: translateY(-2px); }
+    .active { background: white !important; color: black !important; }
   </style>
 </head>
 <body>
-  <div id="sidebar">
-    <h1 style="font-size:28px; margin:0 0 10px 0;">THE ETERNAL CHAIN</h1>
-    <p style="opacity:0.7; margin-bottom:30px;">Mint Bible verses permanently on Solana</p>
+  <div id="canvas-container"></div>
 
-    <div class="stats">Total Blocks: <span id="total">6</span> | Progress: <span id="progress">0.02%</span></div>
-
-    <p style="text-xs opacity:0.6; margin:30px 0 10px 0;">SELECT VERSION</p>
-    <div style="display:flex; gap:8px; margin-bottom:30px;">
-      <button onclick="selectVersion(0)">KJV</button>
-      <button onclick="selectVersion(1)">ASV</button>
-      <button onclick="selectVersion(2)">WEB</button>
+  <div class="overlay">
+    <!-- Header -->
+    <div class="header">
+      <div class="title">VERSECHAIN</div>
+      <button onclick="mockWalletConnect()" style="background:#fff; color:#000; padding:12px 28px; border-radius:9999px; font-weight:700;">
+        Connect Wallet
+      </button>
     </div>
 
-    <div style="background:#222; padding:20px; border-radius:12px; min-height:160px;">
-      <div id="preview-version" style="font-size:13px; opacity:0.6;">KJV</div>
-      <div id="preview-ref" style="font-size:22px; font-weight:700; margin:8px 0;">Genesis 1:1</div>
-      <div id="preview-text" style="line-height:1.5;">In the beginning God created the heaven and the earth.</div>
+    <!-- Right Control Panel -->
+    <div class="controls">
+      <div style="font-size:0.9rem; letter-spacing:2px; opacity:0.7; margin-bottom:16px;">MINT NEW VERSE BLOCK</div>
+      <select id="version-select" style="width:100%; padding:14px; background:#111; border:1px solid #444; color:white; border-radius:12px; margin-bottom:20px;">
+        <option value="KJV">King James Version (KJV)</option>
+        <option value="ASV">American Standard Version (ASV)</option>
+        <option value="WEB">World English Bible (WEB)</option>
+      </select>
+      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
-    <button onclick="createBlock()" style="margin-top:30px;">CONNECT WALLET &amp; CREATE BLOCK</button>
+    <!-- Bottom Navigation -->
+    <div class="nav" id="nav-buttons"></div>
+
+    <!-- Footer -->
+    <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); font-size:0.8rem; opacity:0.5; white-space:nowrap;">
+      ETERNAL ON-CHAIN BIBLE VERSE CHAIN • SOLANA DEVNET
+    </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script>
-    let scene, camera, renderer, blockMeshes = [];
-    let autoRotate = true;
-    let isDragging = false;
-    let previousMouseX = 0;
-
-    const exampleBlocks = [
-      { ref: "Genesis 1:1" },
-      { ref: "John 3:16" },
-      { ref: "Psalm 23:1" },
-      { ref: "Romans 8:28" },
-      { ref: "Philippians 4:13" },
-      { ref: "Matthew 6:33" }
-    ];
+    // Scene setup
+    let scene, camera, renderer, controls;
+    let blocks = [];
+    let currentIndex = 0;
+    let rays = [];
 
     function init() {
+      const container = document.getElementById('canvas-container');
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x000000);
-
-      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
 
-      // Premium cinematic lighting (like Solana Compass)
-      scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-      const keyLight = new THREE.PointLight(0xffffff, 2.4);
-      keyLight.position.set(0, 80, 60);
-      scene.add(keyLight);
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.minDistance = 18;
+      controls.maxDistance = 80;
 
-      // Vertical 3D Cross - more dramatic and 3D
-      const cross = new THREE.Group();
-      const v = new THREE.Mesh(new THREE.BoxGeometry(6, 160, 6), new THREE.MeshPhongMaterial({color:0xeeeeee, emissive:0xaaaaaa, transparent:true, opacity:0.25}));
-      const h = new THREE.Mesh(new THREE.BoxGeometry(80, 6, 6), new THREE.MeshPhongMaterial({color:0xeeeeee, emissive:0xaaaaaa, transparent:true, opacity:0.25}));
-      h.position.y = 32;
-      cross.add(v); cross.add(h);
-      cross.position.z = -85;
-      cross.rotation.y = 0.15;
-      scene.add(cross);
+      camera.position.set(8, 22, 35);
 
-      // Blocks with better scale
-      const radius = 14.5;
-      exampleBlocks.forEach((block, i) => {
-        const angle = i * 0.29;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius * 0.7;
-        const y = i * 2.6 - 7.8;
+      // Lights
+      scene.add(new THREE.AmbientLight(0x555555, 0.6));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+      dirLight.position.set(20, 55, 30);
+      scene.add(dirLight);
 
-        const mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(2.3, 2.3, 2.3),
-          new THREE.MeshPhongMaterial({color:0xffffff, emissive:0xcccccc, shininess:130})
-        );
-        mesh.position.set(x, y, z);
-        scene.add(mesh);
-        blockMeshes.push(mesh);
-      });
+      // Holy Beam + rays
+      createHolyBeam();
 
-      camera.position.set(0, 25, 55);
-      camera.lookAt(0, 0, 0);
+      // Initial blocks
+      createInitialBlocks();
 
-      // Mouse navigation (like Solana Compass)
-      document.addEventListener('mousedown', e => { isDragging = true; previousMouseX = e.clientX; });
-      document.addEventListener('mouseup', () => isDragging = false);
-      document.addEventListener('mousemove', e => {
-        if (isDragging) {
-          scene.rotation.y += (e.clientX - previousMouseX) * 0.0035;
-          previousMouseX = e.clientX;
-        }
-      });
-      document.addEventListener('wheel', e => {
-        camera.position.z += e.deltaY * 0.05;
-        camera.position.z = Math.max(25, Math.min(90, camera.position.z));
+      // Particles
+      createParticles();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
       animate();
+      updateNavButtons();
+    }
+
+    function createHolyBeam() {
+      // Central core
+      const coreGeo = new THREE.CylinderGeometry(0.65, 0.85, 110, 64);
+      const coreMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.95 });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      core.position.y = -18;
+      scene.add(core);
+
+      // Misty base
+      const baseGeo = new THREE.PlaneGeometry(28, 28);
+      const baseMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.rotation.x = Math.PI / 2;
+      base.position.y = -37;
+      scene.add(base);
+
+      // Hundreds of individual light beams
+      rays = [];
+      for (let i = 0; i < 140; i++) {
+        const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
+        const rayMat = new THREE.MeshBasicMaterial({ color: 0xf5e8c7, transparent: true, opacity: 0.7 });
+        const ray = new THREE.Mesh(rayGeo, rayMat);
+        ray.position.set(
+          (Math.random() - 0.5) * 4,
+          -50 + i * 0.9,
+          (Math.random() - 0.5) * 4
+        );
+        ray.userData = { speed: 0.6 + Math.random() * 0.9 };
+        scene.add(ray);
+        rays.push(ray);
+      }
+    }
+
+    function createInitialBlocks() {
+      blocks = [
+        { id: 1, reference: "Genesis 1:1" },
+        { id: 2, reference: "John 3:16" },
+        { id: 3, reference: "Psalm 23:1" },
+        { id: 4, reference: "Matthew 6:9" },
+        { id: 5, reference: "Romans 8:28" },
+        { id: 6, reference: "Philippians 4:13" },
+      ];
+      currentIndex = blocks.length - 1;
+    }
+
+    function createParticles() {
+      const count = 1600;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count * 3; i += 3) {
+        positions[i]     = (Math.random() - 0.5) * 65;
+        positions[i + 1] = Math.random() * -130 - 35;
+        positions[i + 2] = (Math.random() - 0.5) * 60;
+      }
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.065,
+        color: 0xf5e8c7,
+        transparent: true,
+        opacity: 0.6,
+        depthWrite: false
+      });
+
+      const points = new THREE.Points(geometry, material);
+      scene.add(points);
+
+      // Animation in animate() loop
+      window.particles = points;
     }
 
     function animate() {
       requestAnimationFrame(animate);
 
-      // Slow elegant pulse
-      const pulse = 1 + Math.sin(Date.now() / 1200) * 0.06;
-      blockMeshes.forEach(m => m.scale.setScalar(pulse));
+      // Animate rays
+      rays.forEach(ray => {
+        ray.position.y += ray.userData.speed || 0.8;
+        if (ray.position.y > 50) ray.position.y = -50;
+        ray.material.opacity = Math.max(0.15, 1 - Math.abs(ray.position.y) / 70);
+      });
 
-      if (autoRotate) scene.rotation.y += 0.0004;
+      if (window.particles) {
+        const pos = window.particles.geometry.attributes.position.array;
+        for (let i = 1; i < pos.length; i += 3) {
+          pos[i] += 0.032;
+          if (pos[i] > 50) pos[i] = -130;
+        }
+        window.particles.geometry.attributes.position.needsUpdate = true;
+      }
 
+      controls.update();
       renderer.render(scene, camera);
     }
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Sidebar functions
-    function selectVersion(i) {
-      alert("Version selected (demo)");
+    function updateNavButtons() {
+      const nav = document.getElementById('nav-buttons');
+      nav.innerHTML = '';
+      blocks.forEach((block, index) => {
+        const btn = document.createElement('button');
+        btn.textContent = `BLOCK ${String(index + 1).padStart(2, '0')} — ${block.reference}`;
+        btn.onclick = () => {
+          currentIndex = index;
+          if (chainRef && chainRef.focusBlock) chainRef.focusBlock(index);
+        };
+        if (index === currentIndex) btn.style.background = '#fff';
+        if (index === currentIndex) btn.style.color = '#000';
+        nav.appendChild(btn);
+      });
     }
-    function createBlock() {
-      alert("Wallet connect + block creation coming soon");
-    }
 
-    init();
+    // Mock create block
+    window.createNewBlock = function() {
+      const version = document.getElementById('version-select') ? document.getElementById('version-select').value : 'KJV';
+      const refs = ["Genesis 1:1", "John 3:16", "Psalm 23:1", "Matthew 6:9", "Romans 8:28", "Philippians 4:13"];
+      const newRef = refs[Math.floor(Math.random() * refs.length)];
+      const newBlock = { id: Date.now(), reference: newRef };
+      blocks.push(newBlock);
+      currentIndex = blocks.length - 1;
+      updateNavButtons();
+      if (chainRef && chainRef.focusBlock) chainRef.focusBlock(currentIndex);
+      alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
+    };
+
+    window.mockWalletConnect = function() {
+      alert("✅ Wallet connected (demo mode)\n\nReal Solana connection will be added when the program is deployed.");
+    };
+
+    // Global reference for focusBlock
+    window.chainRef = {
+      focusBlock: (index) => {
+        // Camera will be updated in the Three.js scene via the ref in a real setup
+        console.log("Focusing block", index);
+      }
+    };
+
+    // Start everything
+    window.onload = init;
   </script>
 </body>
 </html>
