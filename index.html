@@ -146,13 +146,16 @@
       dirLight.position.set(22, 55, 32);
       scene.add(dirLight);
 
+      // Same rotation for both books
+      const sameRotation = { x: 0.18, y: 0.25, z: -0.08 };
+
       // Bottom book
-      createHolyBible(-48, 0.18, 0.25, -0.08);
+      createHolyBible(-48, sameRotation.x, sameRotation.y, sameRotation.z);
 
-      // Top book
-      createHolyBible(55, -0.15, -0.22, 0.06);
+      // Top book (same facing direction)
+      createHolyBible(55, sameRotation.x, sameRotation.y, sameRotation.z);
 
-      // Central beam connecting both books
+      // Central beam + upward rays only
       createConnectingBeam();
 
       createInitialBlocks();
@@ -261,7 +264,7 @@
     function createConnectingBeam() {
       const bottomY = -48;
       const topY = 55;
-      const beamHeight = topY - bottomY; // 103
+      const beamHeight = topY - bottomY;
 
       // Main beam cylinder
       const core = new THREE.Mesh(
@@ -279,7 +282,7 @@
       glow.position.y = core.position.y;
       scene.add(glow);
 
-      // Rays from bottom book (upward)
+      // Only upward rays from bottom book
       rays = [];
       for (let i = 0; i < 145; i++) {
         const ray = new THREE.Mesh(
@@ -291,23 +294,7 @@
           bottomY + 1.8 + i * 0.78,
           (Math.random() - 0.5) * 2.8
         );
-        ray.userData = { speed: 0.52 + Math.random() * 0.9, direction: 1 };
-        scene.add(ray);
-        rays.push(ray);
-      }
-
-      // Rays from top book (downward)
-      for (let i = 0; i < 145; i++) {
-        const ray = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.028, 0.065, 10.5, 5),
-          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
-        );
-        ray.position.set(
-          (Math.random() - 0.5) * 2.8,
-          topY - 1.8 - i * 0.78,
-          (Math.random() - 0.5) * 2.8
-        );
-        ray.userData = { speed: 0.52 + Math.random() * 0.9, direction: -1 };
+        ray.userData = { speed: 0.52 + Math.random() * 0.9 };
         scene.add(ray);
         rays.push(ray);
       }
@@ -380,12 +367,8 @@
       requestAnimationFrame(animate);
 
       rays.forEach(ray => {
-        const dir = ray.userData.direction || 1;
-        ray.position.y += (ray.userData.speed || 0.68) * dir;
-
-        if (dir > 0 && ray.position.y > 52) ray.position.y = -43;
-        if (dir < 0 && ray.position.y < -52) ray.position.y = 52;
-
+        ray.position.y += ray.userData.speed || 0.68;
+        if (ray.position.y > 52) ray.position.y = -43;
         ray.material.opacity = Math.max(0.1, 1 - Math.abs(ray.position.y) / 78);
       });
 
