@@ -127,20 +127,6 @@
     const BOTTOM_Y = -46;
     const TOP_Y = 53;
 
-    // Verse database
-    const VERSES = [
-      { ref: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
-      { ref: "John 3:16", text: "For God so loved the world..." },
-      { ref: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
-      { ref: "Matthew 6:9", text: "Our Father which art in heaven..." },
-      { ref: "Romans 8:28", text: "All things work together for good..." },
-      { ref: "Philippians 4:13", text: "I can do all things through Christ..." },
-      { ref: "Isaiah 40:31", text: "They that wait upon the Lord..." },
-      { ref: "Proverbs 3:5", text: "Trust in the Lord with all thine heart..." },
-      { ref: "Jeremiah 29:11", text: "For I know the thoughts that I think..." },
-      { ref: "Psalm 46:10", text: "Be still, and know that I am God." }
-    ];
-
     function init() {
       const container = document.getElementById('canvas-container');
       scene = new THREE.Scene();
@@ -156,7 +142,11 @@
       controls.dampingFactor = 0.1;
       controls.minDistance = 16;
       controls.maxDistance = 75;
-      camera.position.set(14, 16, 36);
+
+      // === NEW INITIAL CAMERA VIEW (matching your screenshot) ===
+      camera.position.set(22, 6, 34);
+      controls.target.set(0, 5, 0);
+      controls.update();
 
       scene.add(new THREE.AmbientLight(0x666666, 0.7));
       const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
@@ -322,12 +312,11 @@
       );
       mesh.position.set(pos.x, pos.y, pos.z);
 
-      // Make back face the beam
       const center = new THREE.Vector3(0, pos.y, 0);
       mesh.lookAt(center);
       mesh.rotateY(Math.PI);
 
-      // === VERSE TEXT ON FRONT (black lettering) ===
+      // Verse text on front
       const verse = block.reference + "\n" + block.text.substring(0, 45) + "...";
 
       const canvas = document.createElement('canvas');
@@ -348,7 +337,7 @@
         new THREE.PlaneGeometry(2.3, 1.1),
         new THREE.MeshBasicMaterial({ map: textTexture, transparent: true })
       );
-      textPlane.position.set(0, 0, 0.18); // slightly in front
+      textPlane.position.set(0, 0, 0.18);
       mesh.add(textPlane);
 
       scene.add(mesh);
@@ -358,6 +347,18 @@
     function createInitialBlocks() {
       blocks = [];
       const initialCount = 12;
+      const VERSES = [
+        { ref: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
+        { ref: "John 3:16", text: "For God so loved the world..." },
+        { ref: "Psalm 23:1", text: "The Lord is my shepherd..." },
+        { ref: "Matthew 6:9", text: "Our Father which art in heaven..." },
+        { ref: "Romans 8:28", text: "All things work together for good..." },
+        { ref: "Philippians 4:13", text: "I can do all things through Christ..." },
+        { ref: "Isaiah 40:31", text: "They that wait upon the Lord..." },
+        { ref: "Proverbs 3:5", text: "Trust in the Lord with all thine heart..." },
+        { ref: "Jeremiah 29:11", text: "For I know the thoughts that I think..." },
+        { ref: "Psalm 46:10", text: "Be still, and know that I am God." }
+      ];
 
       for (let i = 0; i < initialCount; i++) {
         const verse = VERSES[i % VERSES.length];
@@ -390,6 +391,19 @@
     }
 
     function createNewBlock() {
+      const VERSES = [
+        { ref: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
+        { ref: "John 3:16", text: "For God so loved the world..." },
+        { ref: "Psalm 23:1", text: "The Lord is my shepherd..." },
+        { ref: "Matthew 6:9", text: "Our Father which art in heaven..." },
+        { ref: "Romans 8:28", text: "All things work together for good..." },
+        { ref: "Philippians 4:13", text: "I can do all things through Christ..." },
+        { ref: "Isaiah 40:31", text: "They that wait upon the Lord..." },
+        { ref: "Proverbs 3:5", text: "Trust in the Lord with all thine heart..." },
+        { ref: "Jeremiah 29:11", text: "For I know the thoughts that I think..." },
+        { ref: "Psalm 46:10", text: "Be still, and know that I am God." }
+      ];
+
       const verse = VERSES[Math.floor(Math.random() * VERSES.length)];
       const newBlock = {
         id: Date.now(),
