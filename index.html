@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VERSECHAIN • Eternal Bible Chain</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     body { margin:0; padding:0; overflow:hidden; background:#000; font-family:'Inter', system-ui, sans-serif; }
@@ -128,12 +127,15 @@
   </div>
 
   <script>
-    let scene, camera, renderer, controls;
+    let scene, camera, renderer;
     let blocks = [];
     let currentIndex = 0;
     let rays = [];
     let particlesMesh;
     let blockMeshes = [];
+    let isDragging = false;
+    let previousMouseX = 0;
+    let previousMouseY = 0;
 
     function init() {
       const container = document.getElementById('canvas-container');
@@ -143,12 +145,6 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(window.devicePixelRatio);
       container.appendChild(renderer.domElement);
-
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.1;
-      controls.minDistance = 18;
-      controls.maxDistance = 80;
 
       camera.position.set(8, 22, 35);
 
@@ -160,6 +156,24 @@
       createHolyBeam();
       createInitialBlocks();
       createParticles();
+
+      // Simple custom mouse controls (no OrbitControls)
+      const canvas = renderer.domElement;
+      canvas.addEventListener('mousedown', e => { isDragging = true; previousMouseX = e.clientX; previousMouseY = e.clientY; });
+      window.addEventListener('mouseup', () => isDragging = false);
+      window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        const deltaX = (e.clientX - previousMouseX) * 0.005;
+        const deltaY = (e.clientY - previousMouseY) * 0.005;
+        camera.position.x += Math.sin(camera.rotation.y) * deltaY * 10;
+        camera.position.z += Math.cos(camera.rotation.y) * deltaY * 10;
+        camera.rotation.y -= deltaX;
+        previousMouseX = e.clientX;
+        previousMouseY = e.clientY;
+      });
+      window.addEventListener('wheel', e => {
+        camera.position.z += e.deltaY * 0.05;
+      });
 
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -173,31 +187,26 @@
     }
 
     function createHolyBeam() {
-      // Central core - pure white beam shooting out of the book
       const coreGeo = new THREE.CylinderGeometry(0.65, 0.85, 110, 64);
       const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
       const core = new THREE.Mesh(coreGeo, coreMat);
       core.position.y = -18;
       scene.add(core);
 
-      // === SOLID OPEN BIBLE — SPINE AT BASE OF BEAM ===
       const bookY = -42;
 
-      // Left cover
       const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
       const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8 });
       const leftCover = new THREE.Mesh(coverGeo, coverMat);
-      leftCover.rotation.set(Math.PI / 2, -0.4, 0);
+      leftCover.rotation.set(Math.PI / 2, -0.25, 0);
       leftCover.position.set(-3.8, bookY, 0);
       scene.add(leftCover);
 
-      // Right cover
       const rightCover = new THREE.Mesh(coverGeo, coverMat);
-      rightCover.rotation.set(Math.PI / 2, 0.4, 0);
+      rightCover.rotation.set(Math.PI / 2, 0.25, 0);
       rightCover.position.set(3.8, bookY, 0);
       scene.add(rightCover);
 
-      // Spine (centered at base)
       const spineGeo = new THREE.BoxGeometry(1.8, 18, 2.2);
       const spineMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
       const spine = new THREE.Mesh(spineGeo, spineMat);
@@ -205,7 +214,6 @@
       spine.rotation.x = Math.PI / 2;
       scene.add(spine);
 
-      // Spine bands
       const bandMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
       for (let i = 0; i < 3; i++) {
         const band = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.2, 2.3), bandMat);
@@ -214,29 +222,23 @@
         scene.add(band);
       }
 
-      // Tight fanned inner pages (solid, no gaps)
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
       for (let i = 0; i < 25; i++) {
         const pageGeo = new THREE.PlaneGeometry(13.2, 17);
         const page = new THREE.Mesh(pageGeo, pageMat);
-        const angle = -0.28 + (i * 0.022);
+        const angle = -0.22 + (i * 0.017);
         page.rotation.set(Math.PI / 2, angle, 0);
         page.position.set(-1.1 + i * 0.085, bookY + 0.35 + i * 0.012, i * 0.008);
         scene.add(page);
       }
 
-      // Page text lines
       const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
       for (let i = 0; i < 25; i++) {
-        const angle = -0.28 + (i * 0.022);
+        const angle = -0.22 + (i * 0.017);
         const pageZ = i * 0.008;
         const pageY = bookY + 0.35 + i * 0.012;
-
         for (let j = 0; j < 14; j++) {
-          const points = [
-            new THREE.Vector3(-5.5, pageY + 0.3 + j * 1.05, pageZ),
-            new THREE.Vector3(5, pageY + 0.3 + j * 1.05, pageZ)
-          ];
+          const points = [new THREE.Vector3(-5.5, pageY + 0.3 + j * 1.05, pageZ), new THREE.Vector3(5, pageY + 0.3 + j * 1.05, pageZ)];
           const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
           const line = new THREE.Line(lineGeo, lineMat);
           line.rotation.set(Math.PI / 2, angle, 0);
@@ -244,7 +246,6 @@
         }
       }
 
-      // Light beams shooting upward from the center of the book
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
@@ -257,6 +258,7 @@
       }
     }
 
+    // (createInitialBlocks, createParticles, animate, focusBlock, etc. remain the same as previous version)
     function createInitialBlocks() {
       blocks = [
         { id: 1, reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
@@ -327,7 +329,6 @@
         particlesMesh.geometry.attributes.position.needsUpdate = true;
       }
 
-      controls.update();
       renderer.render(scene, camera);
     }
 
@@ -337,8 +338,6 @@
       if (block && block.mesh) {
         const target = block.mesh.position;
         camera.position.set(target.x + 8, target.y + 4, target.z + 12);
-        controls.target.copy(target);
-        controls.update();
       }
       updateNavButtons();
     }
