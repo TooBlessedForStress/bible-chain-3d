@@ -375,7 +375,7 @@
 
       rays.forEach(ray => {
         ray.position.y += ray.userData.speed || 0.68;
-        if (ray.position.y > 52) ray.position.y = -50;
+        if (ray.position.y > 52) ray.position.y = -40;
         ray.material.opacity = Math.max(0.1, 1 - Math.abs(ray.position.y) / 78);
       });
 
