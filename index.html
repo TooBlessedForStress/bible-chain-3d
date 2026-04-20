@@ -141,12 +141,12 @@
       controls.maxDistance = 75;
       camera.position.set(14, 16, 36);
 
-      scene.add(new THREE.AmbientLight(0x555555, 0.65));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 2.6);
+      scene.add(new THREE.AmbientLight(0x666666, 0.7));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
       dirLight.position.set(22, 55, 32);
       scene.add(dirLight);
 
-      createProfessionalBookAndBeam();
+      createWhiteHolyBibleAndBeam();
       createInitialBlocks();
       createParticles();
 
@@ -160,76 +160,71 @@
       focusBlock(currentIndex);
     }
 
-    function createProfessionalBookAndBeam() {
-      // === PROFESSIONAL CLOSED BOOK (dark + gold trim) ===
+    function createWhiteHolyBibleAndBeam() {
       const bookCenterY = -48;
       const bookGroup = new THREE.Group();
       bookGroup.position.set(0, bookCenterY, 0);
-      bookGroup.rotation.set(0.18, 0.25, -0.08); // elegant tilt like screenshot
+      bookGroup.rotation.set(0.18, 0.25, -0.08);
       scene.add(bookGroup);
 
-      // Dark premium cover material
+      // === WHITE / CREAM BIBLE MATERIALS ===
       const coverMat = new THREE.MeshStandardMaterial({ 
-        color: 0x1a1816, 
-        roughness: 0.55, 
+        color: 0xf8f4ed,      // warm off-white
+        roughness: 0.5, 
+        metalness: 0.15 
+      });
+      const trimMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffffff,      // bright white
+        roughness: 0.3, 
+        metalness: 0.6 
+      });
+      const spineMat = new THREE.MeshStandardMaterial({ 
+        color: 0xe8e0d0,      // slightly warmer white
+        roughness: 0.45, 
         metalness: 0.25 
       });
       const goldMat = new THREE.MeshStandardMaterial({ 
-        color: 0xd4af37, 
+        color: 0xc9a227,      // elegant gold
         roughness: 0.35, 
         metalness: 0.85 
       });
-      const spineMat = new THREE.MeshStandardMaterial({ 
-        color: 0x2c2520, 
-        roughness: 0.5, 
-        metalness: 0.35 
-      });
 
-      // Main book body (thick closed book)
+      // Main book body (thick closed white Bible)
       const bookBody = new THREE.Mesh(
         new THREE.BoxGeometry(15.5, 3.8, 20.5),
         coverMat
       );
-      bookBody.position.set(0, 0, 0);
       bookGroup.add(bookBody);
 
-      // Gold edge trim (all four sides)
+      // White + gold edge trim
       const trimThickness = 0.18;
       const edges = [
-        // Top edge
         { geo: new THREE.BoxGeometry(15.6, trimThickness, 20.6), pos: [0, 1.95, 0] },
-        // Bottom edge
         { geo: new THREE.BoxGeometry(15.6, trimThickness, 20.6), pos: [0, -1.95, 0] },
-        // Left edge
         { geo: new THREE.BoxGeometry(trimThickness, 3.9, 20.6), pos: [-7.75, 0, 0] },
-        // Right edge
         { geo: new THREE.BoxGeometry(trimThickness, 3.9, 20.6), pos: [7.75, 0, 0] }
       ];
-
       edges.forEach(e => {
-        const trim = new THREE.Mesh(e.geo, goldMat);
+        const trim = new THREE.Mesh(e.geo, trimMat);
         trim.position.set(...e.pos);
         bookGroup.add(trim);
       });
 
       // Gold corner accents
-      const cornerSize = 1.2;
+      const cornerSize = 1.15;
       const corners = [
-        [-7.2, 1.7, -9.7], [7.2, 1.7, -9.7],
-        [-7.2, 1.7, 9.7],  [7.2, 1.7, 9.7],
-        [-7.2, -1.7, -9.7], [7.2, -1.7, -9.7],
-        [-7.2, -1.7, 9.7],  [7.2, -1.7, 9.7]
+        [-7.15, 1.65, -9.65], [7.15, 1.65, -9.65],
+        [-7.15, 1.65, 9.65],  [7.15, 1.65, 9.65],
+        [-7.15, -1.65, -9.65], [7.15, -1.65, -9.65],
+        [-7.15, -1.65, 9.65],  [7.15, -1.65, 9.65]
       ];
       corners.forEach(pos => {
-        const corner = new THREE.Mesh(
-          new THREE.BoxGeometry(cornerSize, cornerSize, cornerSize),
-          goldMat
-        );
+        const corner = new THREE.Mesh(new THREE.BoxGeometry(cornerSize, cornerSize, cornerSize), goldMat);
         corner.position.set(...pos);
         bookGroup.add(corner);
       });
 
-      // Prominent spine with gold detail
+      // Spine
       const spine = new THREE.Mesh(
         new THREE.BoxGeometry(3.2, 3.9, 20.8),
         spineMat
@@ -239,15 +234,33 @@
 
       // Gold spine lines
       for (let i = 0; i < 5; i++) {
-        const line = new THREE.Mesh(
-          new THREE.BoxGeometry(3.25, 0.12, 20.9),
-          goldMat
-        );
+        const line = new THREE.Mesh(new THREE.BoxGeometry(3.25, 0.12, 20.9), goldMat);
         line.position.set(-7.9, -1.4 + i * 0.7, 0);
         bookGroup.add(line);
       }
 
-      // === HOLY BEAM starting from CENTER of the book ===
+      // === "HOLY BIBLE" TEXT ON COVER ===
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#c9a227';
+      ctx.font = 'bold 52px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(201, 162, 39, 0.6)';
+      ctx.shadowBlur = 8;
+      ctx.fillText('HOLY BIBLE', 256, 145);
+      
+      const textTexture = new THREE.CanvasTexture(canvas);
+      const textPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(9.5, 4.2),
+        new THREE.MeshBasicMaterial({ map: textTexture, transparent: true, side: THREE.DoubleSide })
+      );
+      textPlane.position.set(0, 0, 10.4);           // front of cover
+      textPlane.rotation.y = 0.08;                 // slight angle to match book
+      bookGroup.add(textPlane);
+
+      // === HOLY BEAM (starts from center of book) ===
       const beamHeight = 118;
       const core = new THREE.Mesh(
         new THREE.CylinderGeometry(0.68, 0.88, beamHeight, 72),
@@ -264,7 +277,7 @@
       glow.position.y = core.position.y;
       scene.add(glow);
 
-      // Light rays from book center
+      // === RAYS STARTING FROM CENTER OF THE BOOK ===
       rays = [];
       for (let i = 0; i < 145; i++) {
         const ray = new THREE.Mesh(
@@ -273,7 +286,7 @@
         );
         ray.position.set(
           (Math.random() - 0.5) * 2.8,
-          bookCenterY + 8.5 + i * 0.78,
+          bookCenterY + 3.2 + i * 0.78,     // ← moved up to start from center
           (Math.random() - 0.5) * 2.8
         );
         ray.userData = { speed: 0.52 + Math.random() * 0.9 };
