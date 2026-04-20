@@ -11,13 +11,11 @@
     body { margin:0; padding:0; overflow:hidden; background:#000; font-family:'Inter', system-ui, sans-serif; }
     canvas { display:block; }
     .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; color: white; display: flex; flex-direction: column; }
-
     .header {
       padding: 30px 40px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
       display: flex; justify-content: space-between; align-items: center; pointer-events: auto;
     }
     .title { font-size: 2.8rem; font-weight: 900; letter-spacing: -2px; margin: 0; }
-
     .left-panel {
       width: 280px; background: rgba(10,10,10,0.95); border-right: 1px solid #333; padding: 20px; pointer-events: auto; overflow-y: auto;
       margin-top: 20px; margin-left: 40px;
@@ -25,12 +23,10 @@
     .stat { margin-bottom: 20px; }
     .stat-label { font-size: 0.85rem; opacity: 0.7; }
     .stat-value { font-size: 1.6rem; font-weight: 700; color: #ffffff; }
-
     .controls {
       position: absolute; top: 170px; right: 40px; width: 320px; background: rgba(10,10,10,0.95);
       border: 1px solid #333; border-radius: 16px; padding: 24px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
-
     .nav {
       position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
       display: flex; gap: 60px; pointer-events: auto;
@@ -40,7 +36,6 @@
       font-weight: 600; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; min-width: 140px;
     }
     button:hover { background: #222; transform: translateY(-2px); }
-
     .modal {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.94); z-index: 99999; align-items: center; justify-content: center;
     }
@@ -54,7 +49,6 @@
 </head>
 <body>
   <div id="canvas-container"></div>
-
   <div class="overlay">
     <div class="header">
       <div class="title">VERSECHAIN</div>
@@ -62,7 +56,6 @@
         Connect Wallet
       </button>
     </div>
-
     <div class="left-panel">
       <h3 style="margin-top:0; color:#ffffff;">Chain Live Data</h3>
       <div class="stat">
@@ -77,7 +70,6 @@
         <div class="stat-label">Verses Remaining</div>
         <div id="verses-remaining" class="stat-value">31,102</div>
       </div>
-
       <div style="margin-top:30px;">
         <div onclick="toggleDetails()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-top:1px solid #333;">
           <span>Minted Verses by Book</span>
@@ -93,7 +85,6 @@
         </div>
       </div>
     </div>
-
     <div class="controls">
       <div style="font-size:0.9rem; letter-spacing:2px; opacity:0.7; margin-bottom:16px;">MINT NEW VERSE BLOCK</div>
       <select id="version-select" style="width:100%; padding:14px; background:#111; border:1px solid #444; color:white; border-radius:12px; margin-bottom:20px;">
@@ -103,17 +94,14 @@
       </select>
       <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
-
     <div class="nav">
       <button onclick="prevBlock()" style="padding:16px 32px;">← Previous</button>
       <button onclick="nextBlock()" style="padding:16px 32px;">Next →</button>
     </div>
-
     <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); font-size:0.8rem; opacity:0.5; white-space:nowrap;">
       ETERNAL ON-CHAIN BIBLE VERSE CHAIN • SOLANA DEVNET
     </div>
   </div>
-
   <div id="modal" class="modal" onclick="if(event.target.id==='modal')closeModal()">
     <div class="modal-content" onclick="event.stopImmediatePropagation()">
       <button class="modal-close" onclick="closeModal()">×</button>
@@ -128,18 +116,37 @@
   </div>
 
   <script>
+    // ============================================
+    // VERSECHAIN 3D Scene - Cleaned & Improved
+    // Research-backed Three.js 3D Space Implementation
+    // ============================================
+    // Key concepts from Three.js research (docs + tutorials):
+    // - THREE.Scene is the root 3D space (world coordinates). All objects live here.
+    // - THREE.Group is the recommended container for hierarchical 3D objects.
+    //   It allows treating the entire book (covers + spine + fanned pages) as ONE
+    //   transformable unit placed exactly at the base of the holy beam cylinder.
+    // - Local positioning: Child meshes have .position relative to parent Group.
+    //   We set bookGroup.position.y = -42 so the Bible sits at the beam's bottom.
+    // - 3D book modeling: Use PlaneGeometry for pages with small incremental
+    //   rotations + z-offsets to create realistic fanning and depth in 3D space.
+    //   This is the standard low-poly technique seen in Three.js book tutorials.
+    // - No pulsing beams between blocks: Verse blocks now exist as independent
+    //   Meshes in the 3D helix. The "chain" is conceptual (blockchain), not visual.
+    // - Dynamic blocks: New blocks extend the descending 3D spiral automatically.
+    // ============================================
+
     let scene, camera, renderer, controls;
     let blocks = [];
     let currentIndex = 0;
     let rays = [];
     let particlesMesh;
     let blockMeshes = [];
-    let connectingBeams = [];   // new: light beams between blocks
-    let burstParticles = [];    // new: temporary explosion particles
+    let burstParticles = [];
 
     function init() {
       const container = document.getElementById('canvas-container');
       scene = new THREE.Scene();
+
       camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -151,17 +158,17 @@
       controls.dampingFactor = 0.1;
       controls.minDistance = 18;
       controls.maxDistance = 80;
-
       camera.position.set(8, 22, 35);
 
+      // Basic 3D scene lighting (ambient + directional for depth and shadows)
       scene.add(new THREE.AmbientLight(0x555555, 0.6));
       const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
       dirLight.position.set(20, 55, 30);
       scene.add(dirLight);
 
-      createHolyBeam();
-      createInitialBlocks();
-      createParticles();
+      createHolyBeam();      // Central beam + properly grouped book at its base
+      createInitialBlocks(); // Verse tablets arranged in 3D helical chain (no beams)
+      createParticles();     // Background floating particles
 
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -170,68 +177,52 @@
       });
 
       animate();
-      updateNavButtons();
       focusBlock(currentIndex);
     }
 
     function createHolyBeam() {
-      // Central core
+      // === CENTRAL HOLY BEAM (the "beam object" - tall Cylinder) ===
       const coreGeo = new THREE.CylinderGeometry(0.65, 0.85, 110, 64);
       const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
       const core = new THREE.Mesh(coreGeo, coreMat);
-      core.position.y = -18;
+      core.position.y = -18;   // Vertical center of the beam
       scene.add(core);
 
-      const bookY = -42;
+      // === BOOK GROUP placed cleanly at the BOTTOM of the beam ===
+      // THREE.Group lets us bundle every book part into a single 3D object.
+      // Positioned in world space so the Bible appears to be the source of the beam.
+      const bookY = -42; // Matches original visual placement (lower beam section)
+      const bookGroup = new THREE.Group();
+      bookGroup.position.set(0, bookY, 0);
+      scene.add(bookGroup);
 
-      // Left cover
-      const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
-      const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8 });
-      const leftCover = new THREE.Mesh(coverGeo, coverMat);
-      leftCover.rotation.set(Math.PI / 2, -0.25, 0);
-      leftCover.position.set(-3.8, bookY, 0);
-      scene.add(leftCover);
-
-      // Right cover
-      const rightCover = new THREE.Mesh(coverGeo, coverMat);
-      rightCover.rotation.set(Math.PI / 2, 0.25, 0);
-      rightCover.position.set(3.8, bookY, 0);
-      scene.add(rightCover);
-
-      // Spine
+      // --- Book parts added to group in logical order for 3D appearance ---
+      // 1. Spine first (central structural element)
       const spineGeo = new THREE.BoxGeometry(1.8, 18, 2.2);
       const spineMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
       const spine = new THREE.Mesh(spineGeo, spineMat);
-      spine.position.set(0, bookY, 0);
       spine.rotation.x = Math.PI / 2;
-      scene.add(spine);
+      spine.position.set(0, 0, 0);
+      bookGroup.add(spine);
 
-      // Spine bands
-      const bandMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
-      for (let i = 0; i < 3; i++) {
-        const band = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.2, 2.3), bandMat);
-        band.position.set(0, bookY - 6 + i * 5, 0);
-        band.rotation.x = Math.PI / 2;
-        scene.add(band);
-      }
-
-      // Tight fanned pages
+      // 2. Fanned pages (the key to realistic 3D book look)
+      // Small angle increments + z-offsets simulate page thickness and perspective
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
       for (let i = 0; i < 25; i++) {
         const pageGeo = new THREE.PlaneGeometry(13.2, 17);
         const page = new THREE.Mesh(pageGeo, pageMat);
         const angle = -0.22 + (i * 0.017);
         page.rotation.set(Math.PI / 2, angle, 0);
-        page.position.set(-1.1 + i * 0.085, bookY + 0.35 + i * 0.012, i * 0.008);
-        scene.add(page);
+        page.position.set(-1.1 + i * 0.085, 0.35 + i * 0.012, i * 0.008);
+        bookGroup.add(page);
       }
 
-      // Page text lines
+      // 3. Subtle text lines on pages (adds detail without complexity)
       const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
       for (let i = 0; i < 25; i++) {
         const angle = -0.22 + (i * 0.017);
         const pageZ = i * 0.008;
-        const pageY = bookY + 0.35 + i * 0.012;
+        const pageY = 0.35 + i * 0.012;
         for (let j = 0; j < 14; j++) {
           const points = [
             new THREE.Vector3(-5.5, pageY + 0.3 + j * 1.05, pageZ),
@@ -240,21 +231,70 @@
           const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
           const line = new THREE.Line(lineGeo, lineMat);
           line.rotation.set(Math.PI / 2, angle, 0);
-          scene.add(line);
+          bookGroup.add(line);
         }
       }
 
-      // Light beams shooting upward from the book
+      // 4. Left & Right covers (angled open for classic 3D book silhouette)
+      const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
+      const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8 });
+
+      const leftCover = new THREE.Mesh(coverGeo, coverMat);
+      leftCover.rotation.set(Math.PI / 2, -0.28, 0);
+      leftCover.position.set(-3.8, 0, 0);
+      bookGroup.add(leftCover);
+
+      const rightCover = new THREE.Mesh(coverGeo, coverMat);
+      rightCover.rotation.set(Math.PI / 2, 0.28, 0);
+      rightCover.position.set(3.8, 0, 0);
+      bookGroup.add(rightCover);
+
+      // 5. Decorative spine bands (top layer)
+      const bandMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
+      for (let i = 0; i < 3; i++) {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.2, 2.3), bandMat);
+        band.rotation.x = Math.PI / 2;
+        band.position.set(0, -6 + i * 5, 0);
+        bookGroup.add(band);
+      }
+
+      // === Light rays emanating from the top of the book (holy beam continuation) ===
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
         const rayMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
         const ray = new THREE.Mesh(rayGeo, rayMat);
-        ray.position.set((Math.random() - 0.5) * 4, bookY + 5 + i * 0.8, (Math.random() - 0.5) * 4);
+        ray.position.set(
+          (Math.random() - 0.5) * 4,
+          5 + i * 0.8,   // Emerges from bookGroup top
+          (Math.random() - 0.5) * 4
+        );
         ray.userData = { speed: 0.6 + Math.random() * 0.9 };
         scene.add(ray);
         rays.push(ray);
       }
+    }
+
+    // Creates one verse block (stone tablet) and positions it in the descending 3D helix
+    function createBlockMesh(block, index) {
+      const angle = index * 0.42;
+      const radius = 10.5;
+      const x = Math.sin(angle) * radius;
+      const z = Math.cos(angle) * radius * 0.85;
+      const y = index * -2.8;   // Creates spiral descent in 3D space
+
+      const geometry = new THREE.BoxGeometry(2.8, 1.8, 0.35);
+      const material = new THREE.MeshStandardMaterial({
+        color: "#e8d8c0",
+        roughness: 0.95,
+        metalness: 0.05
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      scene.add(mesh);
+
+      block.mesh = mesh;
+      blockMeshes.push(mesh);
     }
 
     function createInitialBlocks() {
@@ -268,51 +308,9 @@
       ];
       currentIndex = blocks.length - 1;
       blockMeshes = [];
-      connectingBeams = [];
 
       blocks.forEach((block, i) => {
-        const angle = i * 0.42;
-        const radius = 10.5;
-        const x = Math.sin(angle) * radius;
-        const z = Math.cos(angle) * radius * 0.85;
-        const y = i * -2.8;
-
-        // Tablet-like block (flatter, stone-like)
-        const geometry = new THREE.BoxGeometry(2.8, 1.8, 0.35);
-        const material = new THREE.MeshStandardMaterial({ 
-          color: "#e8d8c0", 
-          roughness: 0.95, 
-          metalness: 0.05 
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(x, y, z);
-        scene.add(mesh);
-        block.mesh = mesh;
-        blockMeshes.push(mesh);
-
-        // Connect to previous block with a light beam
-        if (i > 0) {
-          const prevMesh = blocks[i-1].mesh;
-          const beamGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.8, 8);
-          const beamMat = new THREE.MeshBasicMaterial({ 
-            color: 0xa5f0ff, 
-            transparent: true, 
-            opacity: 0.6 
-          });
-          const beam = new THREE.Mesh(beamGeo, beamMat);
-          const midX = (x + prevMesh.position.x) / 2;
-          const midY = (y + prevMesh.position.y) / 2;
-          const midZ = (z + prevMesh.position.z) / 2;
-          beam.position.set(midX, midY, midZ);
-          const dx = x - prevMesh.position.x;
-          const dy = y - prevMesh.position.y;
-          const dz = z - prevMesh.position.z;
-          const length = Math.sqrt(dx*dx + dy*dy + dz*dz);
-          beam.scale.y = length / 2.8;
-          beam.lookAt(x, y, z);
-          scene.add(beam);
-          connectingBeams.push(beam);
-        }
+        createBlockMesh(block, i);
       });
     }
 
@@ -334,12 +332,10 @@
         opacity: 0.85,
         depthWrite: false
       });
-
       particlesMesh = new THREE.Points(geometry, material);
       scene.add(particlesMesh);
     }
 
-    // Particle explosion burst
     function createBurstAt(position) {
       const count = 180;
       const geometry = new THREE.BufferGeometry();
@@ -363,7 +359,6 @@
         opacity: 1,
         depthWrite: false
       });
-
       const burst = new THREE.Points(geometry, material);
       burst.userData = { velocities, life: 60 };
       scene.add(burst);
@@ -373,19 +368,14 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      // Animate connecting beams (subtle pulse)
-      connectingBeams.forEach(beam => {
-        beam.material.opacity = 0.4 + Math.sin(Date.now() * 0.005) * 0.3;
-      });
-
-      // Animate main rays
+      // Holy light rays rising from the book
       rays.forEach(ray => {
         ray.position.y += ray.userData.speed || 0.8;
         if (ray.position.y > 50) ray.position.y = -50;
         ray.material.opacity = Math.max(0.15, 1 - Math.abs(ray.position.y) / 70);
       });
 
-      // Update global particles
+      // Background particles gently rising
       if (particlesMesh) {
         const pos = particlesMesh.geometry.attributes.position.array;
         for (let i = 1; i < pos.length; i += 3) {
@@ -395,7 +385,7 @@
         particlesMesh.geometry.attributes.position.needsUpdate = true;
       }
 
-      // Update burst particles
+      // Focus burst particles
       for (let i = burstParticles.length - 1; i >= 0; i--) {
         const b = burstParticles[i];
         b.userData.life--;
@@ -406,12 +396,13 @@
           pos[j]     += vel[j];
           pos[j + 1] += vel[j + 1];
           pos[j + 2] += vel[j + 2];
-          vel[j] *= 0.98;
+          vel[j]     *= 0.98;
           vel[j + 1] *= 0.98;
           vel[j + 2] *= 0.98;
         }
         posAttr.needsUpdate = true;
         b.material.opacity = b.userData.life / 60;
+
         if (b.userData.life <= 0) {
           scene.remove(b);
           burstParticles.splice(i, 1);
@@ -430,38 +421,36 @@
         camera.position.set(target.x + 8, target.y + 4, target.z + 12);
         controls.target.copy(target);
         controls.update();
-
-        // Particle explosion from the focused block
         createBurstAt(target);
       }
-      updateNavButtons();
     }
 
-    function updateNavButtons() {
-      const nav = document.getElementById('nav-buttons');
-      nav.innerHTML = `
-        <button onclick="prevBlock()" style="padding:16px 32px;">← Previous</button>
-        <button onclick="nextBlock()" style="padding:16px 32px;">Next →</button>
-      `;
-    }
-
-    window.prevBlock = function() { focusBlock(currentIndex - 1); };
-    window.nextBlock = function() { focusBlock(currentIndex + 1); };
-
-    window.createNewBlock = function() {
-      const refs = ["Genesis 1:1", "John 3:16", "Psalm 23:1", "Matthew 6:9", "Romans 8:28", "Philippians 4:13"];
+    // Adds a brand new verse block to the live 3D scene (extends the helix chain)
+    function createNewBlock() {
+      const refs = [
+        "Genesis 1:1", "John 3:16", "Psalm 23:1",
+        "Matthew 6:9", "Romans 8:28", "Philippians 4:13"
+      ];
       const newRef = refs[Math.floor(Math.random() * refs.length)];
-      const newBlock = { id: Date.now(), reference: newRef, text: "This is the full verse text for the new block. It was randomly selected from the Bible." };
-      blocks.push(newBlock);
-      currentIndex = blocks.length - 1;
-      updateNavButtons();
-      focusBlock(currentIndex);
-      alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
-    };
+      const newBlock = {
+        id: Date.now(),
+        reference: newRef,
+        text: "This is the full verse text for the new block. It was randomly selected from the Bible."
+      };
 
-    window.mockWalletConnect = function() {
-      alert("✅ Wallet connected (demo mode)");
-    };
+      blocks.push(newBlock);
+      const newIndex = blocks.length - 1;
+      createBlockMesh(newBlock, newIndex);
+
+      currentIndex = newIndex;
+      focusBlock(currentIndex);
+
+      alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
+    }
+
+    window.prevBlock = () => focusBlock(currentIndex - 1);
+    window.nextBlock = () => focusBlock(currentIndex + 1);
+    window.mockWalletConnect = () => alert("✅ Wallet connected (demo mode)");
 
     function toggleDetails() {
       const details = document.getElementById('book-details');
