@@ -123,7 +123,7 @@
     let particlesMesh;
     let burstParticles = [];
 
-    const MAX_BLOCKS = 22;           // Enough blocks to fill the space
+    const MAX_BLOCKS = 22;
     const BOTTOM_Y = -48;
     const TOP_Y = 55;
 
@@ -149,7 +149,6 @@
       dirLight.position.set(22, 55, 32);
       scene.add(dirLight);
 
-      // Create both books (same direction)
       const sameRotation = { x: 0.18, y: 0.25, z: -0.08 };
       createHolyBible(BOTTOM_Y, sameRotation.x, sameRotation.y, sameRotation.z);
       createHolyBible(TOP_Y, sameRotation.x, sameRotation.y, sameRotation.z);
@@ -274,7 +273,6 @@
       glow.position.y = core.position.y;
       scene.add(glow);
 
-      // Upward rays from bottom book only
       rays = [];
       for (let i = 0; i < 145; i++) {
         const ray = new THREE.Mesh(
@@ -293,8 +291,8 @@
     }
 
     function getBlockPosition(index) {
-      const totalBlocks = Math.min(blocks.length, MAX_BLOCKS);
-      const t = index / (totalBlocks - 1 || 1);
+      // Always use MAX_BLOCKS for consistent spacing from the start
+      const t = index / (MAX_BLOCKS - 1);
       const y = BOTTOM_Y + t * (TOP_Y - BOTTOM_Y);
       const angle = index * 0.38;
       const radius = 11.5;
@@ -316,8 +314,9 @@
 
     function createInitialBlocks() {
       blocks = [];
-      const initialCount = 12; // Start with 12 blocks
+      const initialCount = 12;
 
+      // Step 1: Create all block objects first
       for (let i = 0; i < initialCount; i++) {
         const ref = ["Genesis 1:1", "John 3:16", "Psalm 23:1", "Matthew 6:9", "Romans 8:28", "Philippians 4:13"][i % 6];
         const newBlock = {
@@ -326,8 +325,13 @@
           text: "This is the full verse text for this block."
         };
         blocks.push(newBlock);
-        createBlockMesh(newBlock, i);
       }
+
+      // Step 2: Create meshes with correct positions (now blocks.length is final)
+      blocks.forEach((block, index) => {
+        createBlockMesh(block, index);
+      });
+
       currentIndex = blocks.length - 1;
     }
 
@@ -349,19 +353,13 @@
         text: "This is the full verse text for the new block."
       };
 
-      // If we reached max blocks, remove the oldest (bottom) block
       if (blocks.length >= MAX_BLOCKS) {
-        const oldest = blocks.shift(); // remove first (bottom)
-        if (oldest.mesh) {
-          scene.remove(oldest.mesh);
-        }
+        const oldest = blocks.shift();
+        if (oldest.mesh) scene.remove(oldest.mesh);
       }
 
-      // Add new block at the top
       blocks.push(newBlock);
       createBlockMesh(newBlock, blocks.length - 1);
-
-      // Reposition all blocks (shift down visually)
       repositionAllBlocks();
 
       currentIndex = blocks.length - 1;
