@@ -180,24 +180,24 @@
       core.position.y = -18;
       scene.add(core);
 
-      // === SOLID OPEN BIBLE — ALL PARTS INTERSECT AT THE BASE ===
+      // === SOLID OPEN BIBLE — SPINE AT BASE OF BEAM ===
       const bookY = -42;
 
       // Left cover
       const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
       const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8 });
       const leftCover = new THREE.Mesh(coverGeo, coverMat);
-      leftCover.rotation.set(Math.PI / 2, -0.75, 0);
-      leftCover.position.set(-4.5, bookY, 0);
+      leftCover.rotation.set(Math.PI / 2, -0.4, 0);
+      leftCover.position.set(-3.8, bookY, 0);
       scene.add(leftCover);
 
       // Right cover
       const rightCover = new THREE.Mesh(coverGeo, coverMat);
-      rightCover.rotation.set(Math.PI / 2, 0.75, 0);
-      rightCover.position.set(4.5, bookY, 0);
+      rightCover.rotation.set(Math.PI / 2, 0.4, 0);
+      rightCover.position.set(3.8, bookY, 0);
       scene.add(rightCover);
 
-      // Spine — lowest point, centered
+      // Spine (centered at base)
       const spineGeo = new THREE.BoxGeometry(1.8, 18, 2.2);
       const spineMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
       const spine = new THREE.Mesh(spineGeo, spineMat);
@@ -214,23 +214,23 @@
         scene.add(band);
       }
 
-      // Fanned inner pages — tight and intersecting the spine
+      // Tight fanned inner pages (solid, no gaps)
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
       for (let i = 0; i < 25; i++) {
         const pageGeo = new THREE.PlaneGeometry(13.2, 17);
         const page = new THREE.Mesh(pageGeo, pageMat);
-        const angle = -0.42 + (i * 0.032);
+        const angle = -0.28 + (i * 0.022);
         page.rotation.set(Math.PI / 2, angle, 0);
-        page.position.set(-1.2 + i * 0.09, bookY + 0.4 + i * 0.015, i * 0.01);
+        page.position.set(-1.1 + i * 0.085, bookY + 0.35 + i * 0.012, i * 0.008);
         scene.add(page);
       }
 
       // Page text lines
       const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
       for (let i = 0; i < 25; i++) {
-        const angle = -0.42 + (i * 0.032);
-        const pageZ = i * 0.01;
-        const pageY = bookY + 0.4 + i * 0.015;
+        const angle = -0.28 + (i * 0.022);
+        const pageZ = i * 0.008;
+        const pageY = bookY + 0.35 + i * 0.012;
 
         for (let j = 0; j < 14; j++) {
           const points = [
@@ -244,7 +244,7 @@
         }
       }
 
-      // Light beams shooting out of the book
+      // Light beams shooting upward from the center of the book
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
