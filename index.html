@@ -298,7 +298,7 @@
         );
         ray.position.set(
           (Math.random() - 0.5) * 2.8,
-          bookCenterY + 1000.8 + i * 0.78,     // ← starts from center
+          bookCenterY + 1.8 + i * 0.78,     // ← starts from center
           (Math.random() - 0.5) * 2.8
         );
         ray.userData = { speed: 0.52 + Math.random() * 0.9 };
@@ -375,7 +375,7 @@
 
       rays.forEach(ray => {
         ray.position.y += ray.userData.speed || 0.68;
-        if (ray.position.y > 52) ray.position.y = -52;
+        if (ray.position.y > 52) ray.position.y = -50;
         ray.material.opacity = Math.max(0.1, 1 - Math.abs(ray.position.y) / 78);
       });
 
