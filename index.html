@@ -58,58 +58,34 @@
     
     .security-note { font-size: 0.65rem; opacity: 0.6; margin-top: 8px; text-align: center; }
 
-    /* Hamburger Button */
     .hamburger {
-      display: none;
-      background: #111;
-      border: 1px solid #444;
-      color: white;
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 1.4rem;
-      z-index: 100;
+      display: none; background: #111; border: 1px solid #444; color: white;
+      width: 44px; height: 44px; border-radius: 10px; align-items: center;
+      justify-content: center; cursor: pointer; font-size: 1.4rem; z-index: 100;
     }
 
     /* Mobile Styles */
     @media (max-width: 768px) {
       .header { padding: 14px 16px; }
       .title { font-size: 1.75rem; }
-      
       .hamburger { display: flex; }
       
       .left-panel {
-        position: fixed;
-        top: 70px;
-        left: 0;
-        margin: 0;
-        height: calc(100vh - 70px);
-        width: 260px;
-        transform: translateX(-100%);
-        z-index: 999;
+        position: fixed; top: 70px; left: 0; margin: 0;
+        height: calc(100vh - 70px); width: 260px;
+        transform: translateX(-100%); z-index: 999;
         border-radius: 0 14px 14px 0;
         box-shadow: 4px 0 20px rgba(0,0,0,0.6);
       }
+      .left-panel.open { transform: translateX(0); }
       
-      .left-panel.open {
-        transform: translateX(0);
-      }
+      /* Hide right-side controls on mobile */
+      .controls { display: none; }
       
-      .controls {
-        position: fixed;
-        bottom: 85px;
-        right: 12px;
-        left: 12px;
-        top: auto;
-        width: auto;
-        max-width: 420px;
-      }
+      /* Show mint section inside left panel on mobile */
+      .mobile-mint-section { display: block; margin-top: 24px; padding-top: 20px; border-top: 1px solid #333; }
       
       .nav { bottom: 14px; gap: 20px; }
-      
       button { padding: 15px 22px; font-size: 0.95rem; min-height: 50px; }
     }
     
@@ -117,6 +93,9 @@
       .left-panel { width: 240px; }
       .title { font-size: 1.55rem; }
     }
+    
+    /* Hide mobile mint section on desktop */
+    .mobile-mint-section { display: none; }
   </style>
 </head>
 <body>
@@ -127,7 +106,6 @@
     <div class="header">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div class="title">VERSECHAIN</div>
-        <!-- Hamburger Button -->
         <button class="hamburger" onclick="toggleLeftPanel()" id="hamburger-btn">☰</button>
       </div>
       
@@ -136,8 +114,9 @@
       </button>
     </div>
 
-    <!-- Left Panel (now toggleable on mobile) -->
+    <!-- Left Panel (now contains mint section on mobile) -->
     <div class="left-panel" id="left-panel">
+      <!-- Chain Stats -->
       <h3 style="margin-top:0; color:#ffffff; font-size:1.05rem;">Chain Live Data</h3>
       
       <div class="stat">
@@ -165,9 +144,26 @@
           <div><strong>Matthew:</strong> 1 minted</div>
         </div>
       </div>
+
+      <!-- Mint Section (visible only inside hamburger on mobile) -->
+      <div class="mobile-mint-section">
+        <div style="font-size:0.85rem; letter-spacing:1.5px; opacity:0.7; margin-bottom:12px;">MINT NEW VERSE BLOCK</div>
+        
+        <select id="version-select-mobile" style="width:100%; padding:12px; background:#111; border:1px solid #444; color:white; border-radius:10px; margin-bottom:14px; font-size:0.95rem;">
+          <option value="KJV">King James Version (KJV)</option>
+          <option value="ASV">American Standard Version (ASV)</option>
+          <option value="WEB">World English Bible (WEB)</option>
+        </select>
+        
+        <button onclick="createNewBlockMobile()" style="width:100%; padding:16px; font-size:1.05rem;">
+          ✨ CREATE NEW BLOCK +10 HOLY
+        </button>
+        
+        <div class="security-note">Devnet • Transactions simulated before signing</div>
+      </div>
     </div>
 
-    <!-- Controls -->
+    <!-- Original Controls (visible only on desktop) -->
     <div class="controls">
       <div style="font-size:0.85rem; letter-spacing:1.5px; opacity:0.7; margin-bottom:12px;">MINT NEW VERSE BLOCK</div>
       
@@ -207,7 +203,7 @@
 
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
   <script>
-    // ==================== ORIGINAL THREE.JS CODE (unchanged) ====================
+    // ==================== ORIGINAL THREE.JS + HAMBURGER + SOLANA ====================
     let scene, camera, renderer, controls;
     let blocks = [];
     let currentIndex = 0;
@@ -217,7 +213,6 @@
     const MAX_BLOCKS = 22;
     const BOTTOM_Y = -46;
     const TOP_Y = 53;
-
     function init() {
       const container = document.getElementById('canvas-container');
       scene = new THREE.Scene();
@@ -343,7 +338,6 @@
       }
     }
 
-    // Close panel when clicking outside on mobile
     document.addEventListener('click', function(e) {
       const panel = document.getElementById('left-panel');
       const hamburger = document.getElementById('hamburger-btn');
@@ -603,19 +597,34 @@
       const list = verses[version] || verses["KJV"];
       return list[Math.floor(Math.random() * list.length)];
     }
-
     async function createNewBlock() {
+      const version = document.getElementById('version-select').value;
+      await mintVerse(version);
+    }
+
+    // Mobile mint function (uses hamburger menu controls)
+    async function createNewBlockMobile() {
+      const version = document.getElementById('version-select-mobile').value;
+      await mintVerse(version);
+      
+      // Close hamburger after minting on mobile
+      const panel = document.getElementById('left-panel');
+      const hamburger = document.getElementById('hamburger-btn');
+      panel.classList.remove('open');
+      hamburger.innerHTML = '☰';
+    }
+
+    async function mintVerse(version) {
       if (!walletPublicKey) {
         alert("Please connect your wallet first");
         return;
       }
 
-      const version = document.getElementById('version-select').value;
       const verse = await getSecureRandomVerse(version);
 
-      // Build a clear, safe transaction (Memo for now - upgrade to real program later)
       const tx = new solanaWeb3.Transaction();
       const memo = `VERSECHAIN: Minting ${verse.ref} as validator • +10 HOLY`;
+
       tx.add(
         new solanaWeb3.TransactionInstruction({
           keys: [],
@@ -628,10 +637,9 @@
       tx.recentBlockhash = blockhash;
       tx.feePayer = walletPublicKey;
 
-      // Simulate first (security best practice)
       const simulation = await connection.simulateTransaction(tx);
       if (simulation.value.err) {
-        alert("Transaction simulation failed. Please try again later.");
+        alert("Transaction simulation failed.");
         return;
       }
 
@@ -640,8 +648,7 @@
         const signature = await connection.sendRawTransaction(signedTx.serialize());
         await connection.confirmTransaction(signature, "confirmed");
 
-        // Success feedback
-        alert(`✅ Block successfully minted on Solana Devnet!\n\nVerse: ${verse.ref}\n+10 HOLY rewarded to your wallet\n\nView on Solscan: https://solscan.io/tx/${signature}?cluster=devnet`);
+        alert(`✅ Block minted!\n${verse.ref}\n+10 HOLY`);
 
         // Add to 3D chain
         const newBlock = {
@@ -650,31 +657,30 @@
           text: verse.text,
           validator: walletPublicKey.toBase58()
         };
+        
         if (blocks.length >= MAX_BLOCKS) {
           const oldest = blocks.shift();
           if (oldest.mesh) scene.remove(oldest.mesh);
         }
+        
         blocks.push(newBlock);
         createBlockMesh(newBlock, blocks.length - 1);
         repositionAllBlocks();
         currentIndex = blocks.length - 1;
         focusBlock(currentIndex);
 
-        // Update stats
         document.getElementById('verses-created').innerText = 
           parseInt(document.getElementById('verses-created').innerText) + 1;
-        document.getElementById('total-tokens').innerText = 
-          (parseInt(document.getElementById('total-tokens').innerText) + 10) + " HOLY";
 
       } catch (err) {
-        console.error(err);
-        alert("Transaction was cancelled or failed.");
+        alert("Transaction cancelled or failed.");
       }
     }
 
     // Make functions available globally
     window.connectWallet = connectWallet;
     window.createNewBlock = createNewBlock;
+    window.createNewBlockMobile = createNewBlockMobile;
 
     // Start the 3D scene
     window.onload = init;
