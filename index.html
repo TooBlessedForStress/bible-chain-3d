@@ -173,15 +173,15 @@
     }
 
     function createHolyBeam() {
-      // Central core - pure white beam shooting upward
+      // Central core - pure white beam shooting out of the book
       const coreGeo = new THREE.CylinderGeometry(0.65, 0.85, 110, 64);
       const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
       const core = new THREE.Mesh(coreGeo, coreMat);
       core.position.y = -18;
       scene.add(core);
 
-      // === OPEN BIBLE — SPINE AND PAGES AT THE BASE OF THE BEAM ===
-      const bookY = -42;   // base of the entire book
+      // === SOLID OPEN BIBLE — ALL PARTS INTERSECT AT THE BASE ===
+      const bookY = -42;
 
       // Left cover
       const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
@@ -197,7 +197,7 @@
       rightCover.position.set(4.5, bookY, 0);
       scene.add(rightCover);
 
-      // Spine (centered exactly at the base)
+      // Spine — lowest point, centered
       const spineGeo = new THREE.BoxGeometry(1.8, 18, 2.2);
       const spineMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
       const spine = new THREE.Mesh(spineGeo, spineMat);
@@ -214,7 +214,7 @@
         scene.add(band);
       }
 
-      // Tight fanned inner pages
+      // Fanned inner pages — tight and intersecting the spine
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
       for (let i = 0; i < 25; i++) {
         const pageGeo = new THREE.PlaneGeometry(13.2, 17);
@@ -244,7 +244,7 @@
         }
       }
 
-      // Hundreds of individual light beams firing upward (starting from the book)
+      // Light beams shooting out of the book
       rays = [];
       for (let i = 0; i < 140; i++) {
         const rayGeo = new THREE.CylinderGeometry(0.04, 0.08, 12, 8);
