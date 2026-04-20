@@ -1,569 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VERSECHAIN • Eternal Bible Chain</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    body { margin:0; padding:0; overflow:hidden; background:#000; font-family:'Inter', system-ui, sans-serif; }
-    canvas { display:block; }
-    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; color: white; display: flex; flex-direction: column; }
-    .header {
-      padding: 30px 40px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-      display: flex; justify-content: space-between; align-items: center; pointer-events: auto;
+async function createNewBlock() {
+  if (!walletPublicKey) {
+    alert("Please connect your wallet first");
+    return;
+  }
+
+  const version = document.getElementById('version-select').value;
+  const verse = await getSecureRandomVerse(version);
+
+  // Build a clear, safe transaction
+  const tx = new solanaWeb3.Transaction();
+  const memo = `VERSECHAIN: Minting ${verse.ref} as validator • +10 HOLY`;
+
+  tx.add(
+    new solanaWeb3.TransactionInstruction({
+      keys: [],
+      programId: new solanaWeb3.PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
+      data: new TextEncoder().encode(memo)   // ← Fixed for browser
+    })
+  );
+
+  const { blockhash } = await connection.getLatestBlockhash();
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = walletPublicKey;
+
+  // Simulate first (security best practice)
+  const simulation = await connection.simulateTransaction(tx);
+  if (simulation.value.err) {
+    alert("Transaction simulation failed. Please try again later.");
+    return;
+  }
+
+  try {
+    const signedTx = await window.solana.signTransaction(tx);
+    const signature = await connection.sendRawTransaction(signedTx.serialize());
+    await connection.confirmTransaction(signature, "confirmed");
+
+    alert(`✅ Block successfully minted on Solana Devnet!\n\nVerse: ${verse.ref}\n+10 HOLY rewarded to your wallet\n\nView on Solscan: https://solscan.io/tx/${signature}?cluster=devnet`);
+
+    // Add to 3D chain
+    const newBlock = {
+      id: Date.now(),
+      reference: verse.ref,
+      text: verse.text,
+      validator: walletPublicKey.toBase58()
+    };
+    if (blocks.length >= MAX_BLOCKS) {
+      const oldest = blocks.shift();
+      if (oldest.mesh) scene.remove(oldest.mesh);
     }
-    .title { font-size: 2.8rem; font-weight: 900; letter-spacing: -2px; margin: 0; }
-    .left-panel {
-      width: 280px; background: rgba(10,10,10,0.95); border-right: 1px solid #333; padding: 20px; pointer-events: auto; overflow-y: auto;
-      margin-top: 20px; margin-left: 40px;
-    }
-    .stat { margin-bottom: 20px; }
-    .stat-label { font-size: 0.85rem; opacity: 0.7; }
-    .stat-value { font-size: 1.6rem; font-weight: 700; color: #ffffff; }
-    .controls {
-      position: absolute; top: 170px; right: 40px; width: 320px; background: rgba(10,10,10,0.95);
-      border: 1px solid #333; border-radius: 16px; padding: 24px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    }
-    .nav {
-      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 60px; pointer-events: auto;
-    }
-    button {
-      background: #111; color: white; border: 1px solid #444; padding: 16px 32px; border-radius: 9999px;
-      font-weight: 600; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; min-width: 140px;
-    }
-    button:hover { background: #222; transform: translateY(-2px); }
-    .modal {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.94); z-index: 99999; align-items: center; justify-content: center;
-    }
-    .modal-content {
-      background: #0a0a0a; border: 1px solid #444; border-radius: 20px; max-width: 520px; width: 92%; padding: 2rem; position: relative;
-    }
-    .modal-close {
-      position: absolute; top: 1rem; right: 1.5rem; background: none; border: none; color: #fff; font-size: 2.5rem; cursor: pointer;
-    }
-    .security-note {
-      font-size: 0.7rem; opacity: 0.6; margin-top: 8px; text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div id="canvas-container"></div>
-  <div class="overlay">
-    <div class="header">
-      <div class="title">VERSECHAIN</div>
-      <button onclick="connectWallet()" style="background:#fff; color:#000; padding:12px 28px; border-radius:9999px; font-weight:700;">
-        Connect Wallet
-      </button>
-    </div>
-    <div class="left-panel">
-      <h3 style="margin-top:0; color:#ffffff;">Chain Live Data</h3>
-      <div class="stat">
-        <div class="stat-label">Verses Created</div>
-        <div id="verses-created" class="stat-value">12</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Total Tokens Distributed</div>
-        <div id="total-tokens" class="stat-value">120 HOLY</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Verses Remaining</div>
-        <div id="verses-remaining" class="stat-value">31,096</div>
-      </div>
-      <div style="margin-top:30px;">
-        <div onclick="toggleDetails()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-top:1px solid #333;">
-          <span>Minted Verses by Book</span>
-          <span id="expand-icon">▼</span>
-        </div>
-        <div id="book-details" style="display:none; margin-top:10px; font-size:0.9rem; line-height:1.6;">
-          <div><strong>Genesis:</strong> 3 minted • 47 remaining</div>
-          <div><strong>John:</strong> 2 minted • 1,198 remaining</div>
-          <div><strong>Psalm:</strong> 4 minted • 146 remaining</div>
-          <div><strong>Matthew:</strong> 1 minted • 799 remaining</div>
-          <div><strong>Romans:</strong> 2 minted • 398 remaining</div>
-        </div>
-      </div>
-    </div>
-    <div class="controls">
-      <div style="font-size:0.9rem; letter-spacing:2px; opacity:0.7; margin-bottom:16px;">MINT NEW VERSE BLOCK</div>
-      <select id="version-select" style="width:100%; padding:14px; background:#111; border:1px solid #444; color:white; border-radius:12px; margin-bottom:20px;">
-        <option value="KJV">King James Version (KJV)</option>
-        <option value="ASV">American Standard Version (ASV)</option>
-        <option value="WEB">World English Bible (WEB)</option>
-      </select>
-      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
-      <div class="security-note">Devnet • Transactions simulated before signing</div>
-    </div>
-    <div class="nav">
-      <button onclick="prevBlock()" style="padding:16px 32px;">← Previous</button>
-      <button onclick="nextBlock()" style="padding:16px 32px;">Next →</button>
-    </div>
-    <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); font-size:0.8rem; opacity:0.5; white-space:nowrap;">
-      ETERNAL ON-CHAIN BIBLE VERSE CHAIN • SOLANA DEVNET
-    </div>
-  </div>
-  <div id="modal" class="modal" onclick="if(event.target.id==='modal')closeModal()">
-    <div class="modal-content" onclick="event.stopImmediatePropagation()">
-      <button class="modal-close" onclick="closeModal()">×</button>
-      <h2 id="modal-reference" style="margin:0 0 12px; font-size:2rem;"></h2>
-      <p id="modal-text" style="line-height:1.7; font-size:1.1rem; color:#ddd;"></p>
-      <div style="margin-top:20px; font-size:0.9rem; opacity:0.7;">
-        <div>Minted by: <span id="modal-wallet" style="color:#ffffff;"></span></div>
-        <div>Block Height: <span id="modal-height"></span></div>
-        <div>Reward: <span id="modal-reward" style="color:#ffffff;">10 HOLY</span></div>
-      </div>
-    </div>
-  </div>
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-  <script>
-    // ==================== ORIGINAL THREE.JS CODE (UNCHANGED) ====================
-    let scene, camera, renderer, controls;
-    let blocks = [];
-    let currentIndex = 0;
-    let rays = [];
-    let particlesMesh;
-    let burstParticles = [];
-    const MAX_BLOCKS = 22;
-    const BOTTOM_Y = -46;
-    const TOP_Y = 53;
+    blocks.push(newBlock);
+    createBlockMesh(newBlock, blocks.length - 1);
+    repositionAllBlocks();
+    currentIndex = blocks.length - 1;
+    focusBlock(currentIndex);
 
-    function init() {
-      const container = document.getElementById('canvas-container');
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      container.appendChild(renderer.domElement);
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.1;
-      controls.minDistance = 16;
-      controls.maxDistance = 75;
-      camera.position.set(22, 6, 34);
-      controls.target.set(0, 5, 0);
-      controls.update();
-      scene.add(new THREE.AmbientLight(0x666666, 0.7));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-      dirLight.position.set(22, 55, 32);
-      scene.add(dirLight);
-      const sameRotation = { x: 0.18, y: 0.25, z: -0.08 };
-      createHolyBible(-48, sameRotation.x, sameRotation.y, sameRotation.z);
-      createHolyBible(55, sameRotation.x, sameRotation.y, sameRotation.z);
-      createConnectingBeam();
-      createInitialBlocks();
-      createParticles();
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-      animate();
-      focusBlock(currentIndex);
-    }
+    // Update stats
+    document.getElementById('verses-created').innerText = 
+      parseInt(document.getElementById('verses-created').innerText) + 1;
+    document.getElementById('total-tokens').innerText = 
+      (parseInt(document.getElementById('total-tokens').innerText) + 10) + " HOLY";
 
-    function createHolyBible(yPosition, rotX, rotY, rotZ) {
-      const bookGroup = new THREE.Group();
-      bookGroup.position.set(0, yPosition, 0);
-      bookGroup.rotation.set(rotX, rotY, rotZ);
-      scene.add(bookGroup);
-      const coverMat = new THREE.MeshStandardMaterial({ color: 0xf8f4ed, roughness: 0.5, metalness: 0.12 });
-      const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.5 });
-      const spineMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 0.4, metalness: 0.2 });
-      const bookBody = new THREE.Mesh(new THREE.BoxGeometry(15.5, 3.8, 20.5), coverMat);
-      bookGroup.add(bookBody);
-      const trimThickness = 0.18;
-      const edges = [
-        { geo: new THREE.BoxGeometry(15.6, trimThickness, 20.6), pos: [0, 1.95, 0] },
-        { geo: new THREE.BoxGeometry(15.6, trimThickness, 20.6), pos: [0, -1.95, 0] },
-        { geo: new THREE.BoxGeometry(trimThickness, 3.9, 20.6), pos: [-7.75, 0, 0] },
-        { geo: new THREE.BoxGeometry(trimThickness, 3.9, 20.6), pos: [7.75, 0, 0] }
-      ];
-      edges.forEach(e => {
-        const trim = new THREE.Mesh(e.geo, whiteMat);
-        trim.position.set(...e.pos);
-        bookGroup.add(trim);
-      });
-      const cornerSize = 1.15;
-      const corners = [
-        [-7.15, 1.65, -9.65], [7.15, 1.65, -9.65],
-        [-7.15, 1.65, 9.65], [7.15, 1.65, 9.65],
-        [-7.15, -1.65, -9.65], [7.15, -1.65, -9.65],
-        [-7.15, -1.65, 9.65], [7.15, -1.65, 9.65]
-      ];
-      corners.forEach(pos => {
-        const corner = new THREE.Mesh(new THREE.BoxGeometry(cornerSize, cornerSize, cornerSize), whiteMat);
-        corner.position.set(...pos);
-        bookGroup.add(corner);
-      });
-      const spine = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.9, 20.8), spineMat);
-      spine.position.set(-7.9, 0, 0);
-      bookGroup.add(spine);
-      for (let i = 0; i < 5; i++) {
-        const line = new THREE.Mesh(new THREE.BoxGeometry(3.25, 0.12, 20.9), whiteMat);
-        line.position.set(-7.9, -1.4 + i * 0.7, 0);
-        bookGroup.add(line);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 52px Georgia, serif';
-      ctx.textAlign = 'center';
-      ctx.shadowColor = 'rgba(255,255,255,0.8)';
-      ctx.shadowBlur = 12;
-      ctx.fillText('HOLY BIBLE', 256, 145);
-      const textTexture = new THREE.CanvasTexture(canvas);
-      const textPlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(9.5, 4.2),
-        new THREE.MeshBasicMaterial({ map: textTexture, transparent: true })
-      );
-      textPlane.position.set(0, 0, 10.45);
-      textPlane.rotation.y = 0.08;
-      bookGroup.add(textPlane);
-      const bevelCanvas = document.createElement('canvas');
-      bevelCanvas.width = 512;
-      bevelCanvas.height = 256;
-      const bctx = bevelCanvas.getContext('2d');
-      bctx.fillStyle = 'rgba(255,255,255,0.35)';
-      bctx.font = 'bold 52px Georgia, serif';
-      bctx.textAlign = 'center';
-      bctx.fillText('HOLY BIBLE', 256, 145);
-      const bevelTexture = new THREE.CanvasTexture(bevelCanvas);
-      const bevelPlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(9.7, 4.35),
-        new THREE.MeshBasicMaterial({ map: bevelTexture, transparent: true, opacity: 0.6 })
-      );
-      bevelPlane.position.set(0.15, -0.1, 10.25);
-      bevelPlane.rotation.y = 0.08;
-      bookGroup.add(bevelPlane);
-    }
-
-    function createConnectingBeam() {
-      const beamHeight = TOP_Y - BOTTOM_Y;
-      const core = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.68, 0.88, beamHeight, 72),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.93 })
-      );
-      core.position.y = (BOTTOM_Y + TOP_Y) / 2;
-      scene.add(core);
-      const glow = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.32, 0.42, beamHeight * 0.97, 72),
-        new THREE.MeshBasicMaterial({ color: 0xcceeff, transparent: true, opacity: 0.55 })
-      );
-      glow.position.y = core.position.y;
-      scene.add(glow);
-      rays = [];
-      for (let i = 0; i < 145; i++) {
-        const ray = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.028, 0.065, 10.5, 5),
-          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
-        );
-        ray.position.set(
-          (Math.random() - 0.5) * 2.8,
-          BOTTOM_Y + 1.8 + i * 0.78,
-          (Math.random() - 0.5) * 2.8
-        );
-        ray.userData = { speed: 0.52 + Math.random() * 0.9 };
-        scene.add(ray);
-        rays.push(ray);
-      }
-    }
-
-    function getBlockPosition(index) {
-      const t = index / (MAX_BLOCKS - 1);
-      const y = BOTTOM_Y + t * (TOP_Y - BOTTOM_Y);
-      const angle = index * 0.38;
-      const radius = 11.5;
-      const x = Math.sin(angle) * radius;
-      const z = Math.cos(angle) * radius * 0.8;
-      return { x, y, z };
-    }
-
-    function createBlockMesh(block, index) {
-      const pos = getBlockPosition(index);
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(2.55, 1.6, 0.3),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.08 })
-      );
-      mesh.position.set(pos.x, pos.y, pos.z);
-      const center = new THREE.Vector3(0, pos.y, 0);
-      mesh.lookAt(center);
-      mesh.rotateY(Math.PI);
-      const verse = block.reference + "\n" + block.text.substring(0, 45) + "...";
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 128;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#111111';
-      ctx.font = 'bold 18px Georgia, serif';
-      ctx.textAlign = 'center';
-      const lines = verse.split('\n');
-      ctx.fillText(lines[0], 128, 42);
-      ctx.font = '14px Georgia, serif';
-      ctx.fillText(lines[1] || '', 128, 68);
-      const textTexture = new THREE.CanvasTexture(canvas);
-      const textPlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(2.3, 1.1),
-        new THREE.MeshBasicMaterial({ map: textTexture, transparent: true })
-      );
-      textPlane.position.set(0, 0, 0.18);
-      mesh.add(textPlane);
-      scene.add(mesh);
-      block.mesh = mesh;
-    }
-
-    function createInitialBlocks() {
-      blocks = [];
-      const initialCount = 12;
-      const VERSES = [
-        { ref: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
-        { ref: "John 3:16", text: "For God so loved the world..." },
-        { ref: "Psalm 23:1", text: "The Lord is my shepherd..." },
-        { ref: "Matthew 6:9", text: "Our Father which art in heaven..." },
-        { ref: "Romans 8:28", text: "All things work together for good..." },
-        { ref: "Philippians 4:13", text: "I can do all things through Christ..." },
-        { ref: "Isaiah 40:31", text: "They that wait upon the Lord..." },
-        { ref: "Proverbs 3:5", text: "Trust in the Lord with all thine heart..." },
-        { ref: "Jeremiah 29:11", text: "For I know the thoughts that I think..." },
-        { ref: "Psalm 46:10", text: "Be still, and know that I am God." }
-      ];
-      for (let i = 0; i < initialCount; i++) {
-        const verse = VERSES[i % VERSES.length];
-        const newBlock = { id: Date.now() + i, reference: verse.ref, text: verse.text };
-        blocks.push(newBlock);
-      }
-      blocks.forEach((block, index) => createBlockMesh(block, index));
-      currentIndex = blocks.length - 1;
-    }
-
-    function repositionAllBlocks() {
-      blocks.forEach((block, index) => {
-        if (block.mesh) {
-          const pos = getBlockPosition(index);
-          block.mesh.position.set(pos.x, pos.y, pos.z);
-          const center = new THREE.Vector3(0, pos.y, 0);
-          block.mesh.lookAt(center);
-          block.mesh.rotateY(Math.PI);
-        }
-      });
-    }
-
-    function createParticles() {
-      const count = 2600;
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(count * 3);
-      for (let i = 0; i < count * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * 80;
-        positions[i + 1] = Math.random() * -155 - 45;
-        positions[i + 2] = (Math.random() - 0.5) * 70;
-      }
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      const material = new THREE.PointsMaterial({ size: 0.085, color: 0xffffff, transparent: true, opacity: 0.65, depthWrite: false });
-      particlesMesh = new THREE.Points(geometry, material);
-      scene.add(particlesMesh);
-    }
-
-    function createBurstAt(position) {
-      const count = 200;
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(count * 3);
-      const velocities = [];
-      for (let i = 0; i < count * 3; i += 3) {
-        positions[i] = position.x; positions[i+1] = position.y; positions[i+2] = position.z;
-        velocities.push((Math.random()-0.5)*2.9, (Math.random()-0.5)*2.9, (Math.random()-0.5)*2.9);
-      }
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      const burst = new THREE.Points(geometry, new THREE.PointsMaterial({ size: 0.15, color: 0xa5f0ff, transparent: true, opacity: 1, depthWrite: false }));
-      burst.userData = { velocities, life: 52 };
-      scene.add(burst);
-      burstParticles.push(burst);
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      rays.forEach(ray => {
-        ray.position.y += ray.userData.speed || 0.68;
-        if (ray.position.y > 52) ray.position.y = -43;
-        ray.material.opacity = Math.max(0.1, 1 - Math.abs(ray.position.y) / 78);
-      });
-      if (particlesMesh) {
-        const pos = particlesMesh.geometry.attributes.position.array;
-        for (let i = 1; i < pos.length; i += 3) {
-          pos[i] += 0.03;
-          if (pos[i] > 52) pos[i] = -155;
-        }
-        particlesMesh.geometry.attributes.position.needsUpdate = true;
-      }
-      for (let i = burstParticles.length - 1; i >= 0; i--) {
-        const b = burstParticles[i];
-        b.userData.life--;
-        const pos = b.geometry.attributes.position.array;
-        const vel = b.userData.velocities;
-        for (let j = 0; j < pos.length; j += 3) {
-          pos[j] += vel[j]; pos[j+1] += vel[j+1]; pos[j+2] += vel[j+2];
-          vel[j] *= 0.965; vel[j+1] *= 0.965; vel[j+2] *= 0.965;
-        }
-        b.geometry.attributes.position.needsUpdate = true;
-        b.material.opacity = b.userData.life / 52;
-        if (b.userData.life <= 0) { scene.remove(b); burstParticles.splice(i, 1); }
-      }
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    function focusBlock(index) {
-      currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
-      const block = blocks[currentIndex];
-      if (!block || !block.mesh) return;
-      const blockPos = block.mesh.position.clone();
-      const center = new THREE.Vector3(0, blockPos.y, 0);
-      const dir = blockPos.clone().sub(center).normalize();
-      const cameraDistance = 9;
-      const cameraPos = blockPos.clone().add(dir.multiplyScalar(cameraDistance));
-      camera.position.copy(cameraPos);
-      controls.target.copy(blockPos);
-      controls.update();
-      createBurstAt(blockPos);
-    }
-
-    window.prevBlock = () => focusBlock(currentIndex - 1);
-    window.nextBlock = () => focusBlock(currentIndex + 1);
-    function toggleDetails() {
-      const details = document.getElementById('book-details');
-      const icon = document.getElementById('expand-icon');
-      details.style.display = details.style.display === 'block' ? 'none' : 'block';
-      icon.textContent = details.style.display === 'block' ? '▲' : '▼';
-    }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-    // ==================== SAFE SOLANA INTEGRATION ====================
-    let connection;
-    let walletPublicKey = null;
-    const PROGRAM_ID = "PASTE_YOUR_PROGRAM_ID_FROM_SOLANA_PLAYGROUND_HERE"; // ← Replace this
-
-    async function connectWallet() {
-      if (!window.solana || !window.solana.isPhantom) {
-        alert("Please install the Phantom wallet extension");
-        return;
-      }
-      try {
-        const resp = await window.solana.connect();
-        walletPublicKey = resp.publicKey;
-        connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("devnet"));
-
-        const btn = document.querySelector('button[onclick="connectWallet()"]');
-        btn.innerText = walletPublicKey.toBase58().slice(0, 4) + "..." + walletPublicKey.toBase58().slice(-4);
-        btn.style.background = "#22c55e";
-        btn.style.color = "#000";
-      } catch (err) {
-        console.error(err);
-        alert("Failed to connect wallet");
-      }
-    }
-
-    async function getSecureRandomVerse(version) {
-      // Large local list for demo (replace with Supabase Edge Function later)
-      const verses = {
-        "KJV": [
-          { ref: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
-          { ref: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." },
-          { ref: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
-          { ref: "Matthew 6:9", text: "Our Father which art in heaven, Hallowed be thy name." },
-          { ref: "Romans 8:28", text: "And we know that all things work together for good..." },
-          { ref: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." }
-        ],
-        "ASV": [
-          { ref: "Genesis 1:1", text: "In the beginning God created the heavens and the earth." },
-          { ref: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." }
-        ],
-        "WEB": [
-          { ref: "Genesis 1:1", text: "In the beginning, God created the heavens and the earth." },
-          { ref: "Psalm 23:1", text: "Yahweh is my shepherd: I shall lack nothing." }
-        ]
-      };
-      const list = verses[version] || verses["KJV"];
-      return list[Math.floor(Math.random() * list.length)];
-    }
-
-    async function createNewBlock() {
-      if (!walletPublicKey) {
-        alert("Please connect your wallet first");
-        return;
-      }
-
-      const version = document.getElementById('version-select').value;
-      const verse = await getSecureRandomVerse(version);
-
-      // Build a clear, safe transaction (Memo for now - upgrade to real program later)
-      const tx = new solanaWeb3.Transaction();
-      const memo = `VERSECHAIN: Minting ${verse.ref} as validator • +10 HOLY`;
-      tx.add(
-        new solanaWeb3.TransactionInstruction({
-          keys: [],
-          programId: new solanaWeb3.PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
-          data: Buffer.from(memo)
-        })
-      );
-
-      const { blockhash } = await connection.getLatestBlockhash();
-      tx.recentBlockhash = blockhash;
-      tx.feePayer = walletPublicKey;
-
-      // Simulate first (security best practice)
-      const simulation = await connection.simulateTransaction(tx);
-      if (simulation.value.err) {
-        alert("Transaction simulation failed. Please try again later.");
-        return;
-      }
-
-      try {
-        const signedTx = await window.solana.signTransaction(tx);
-        const signature = await connection.sendRawTransaction(signedTx.serialize());
-        await connection.confirmTransaction(signature, "confirmed");
-
-        // Success feedback
-        alert(`✅ Block successfully minted on Solana Devnet!\n\nVerse: ${verse.ref}\n+10 HOLY rewarded to your wallet\n\nView on Solscan: https://solscan.io/tx/${signature}?cluster=devnet`);
-
-        // Add to 3D chain
-        const newBlock = {
-          id: Date.now(),
-          reference: verse.ref,
-          text: verse.text,
-          validator: walletPublicKey.toBase58()
-        };
-        if (blocks.length >= MAX_BLOCKS) {
-          const oldest = blocks.shift();
-          if (oldest.mesh) scene.remove(oldest.mesh);
-        }
-        blocks.push(newBlock);
-        createBlockMesh(newBlock, blocks.length - 1);
-        repositionAllBlocks();
-        currentIndex = blocks.length - 1;
-        focusBlock(currentIndex);
-
-        // Update stats
-        document.getElementById('verses-created').innerText = 
-          parseInt(document.getElementById('verses-created').innerText) + 1;
-        document.getElementById('total-tokens').innerText = 
-          (parseInt(document.getElementById('total-tokens').innerText) + 10) + " HOLY";
-
-      } catch (err) {
-        console.error(err);
-        alert("Transaction was cancelled or failed.");
-      }
-    }
-
-    // Make functions available globally
-    window.connectWallet = connectWallet;
-    window.createNewBlock = createNewBlock;
-
-    // Start the 3D scene
-    window.onload = init;
-  </script>
-</body>
-</html>
+  } catch (err) {
+    console.error(err);
+    alert("Transaction was cancelled or failed.");
+  }
+}
