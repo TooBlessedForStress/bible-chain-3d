@@ -525,25 +525,35 @@
     }
 
     function focusBlock(index) {
-      currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
-      const block = blocks[currentIndex];
-      if (!block || !block.mesh) return;
+  currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
+  const block = blocks[currentIndex];
+  if (!block || !block.mesh) return;
 
-      focusedBlockIndex = currentIndex;
-      isFollowingBlock = true;
+  focusedBlockIndex = currentIndex;
+  isFollowingBlock = true;
 
-      const blockPos = block.mesh.position.clone();
-      const center = new THREE.Vector3(0, blockPos.y, 0);
-      const dir = blockPos.clone().sub(center).normalize();
-      const cameraDistance = 9;
-      const cameraPos = blockPos.clone().add(dir.multiplyScalar(cameraDistance));
+  // Get the block's current world position (after rotation)
+  const worldPos = new THREE.Vector3();
+  block.mesh.getWorldPosition(worldPos);
 
-      camera.position.copy(cameraPos);
-      controls.target.copy(blockPos);
-      controls.update();
+  // Calculate direction from center to block
+  const center = new THREE.Vector3(0, worldPos.y, 0);
+  const dir = worldPos.clone().sub(center).normalize();
+  const cameraDistance = 9;
 
-      createBurstAt(blockPos);
-    }
+  // Position the camera in front of the block
+  const cameraPos = worldPos.clone().add(dir.multiplyScalar(cameraDistance));
+  camera.position.copy(cameraPos);
+
+  // Make the camera rotate to face the front of the block
+  camera.lookAt(worldPos);
+
+  // Update OrbitControls target
+  controls.target.copy(worldPos);
+  controls.update();
+
+  createBurstAt(worldPos);
+}
 
     window.prevBlock = () => focusBlock(currentIndex - 1);
     window.nextBlock = () => focusBlock(currentIndex + 1);
