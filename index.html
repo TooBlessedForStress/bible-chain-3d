@@ -124,8 +124,8 @@
     let burstParticles = [];
 
     const MAX_BLOCKS = 22;
-    const BOTTOM_Y = -48;
-    const TOP_Y = 55;
+    const BOTTOM_Y = -46;   // ← raised by one position
+    const TOP_Y = 53;       // ← lowered by one position
 
     function init() {
       const container = document.getElementById('canvas-container');
@@ -150,8 +150,8 @@
       scene.add(dirLight);
 
       const sameRotation = { x: 0.18, y: 0.25, z: -0.08 };
-      createHolyBible(BOTTOM_Y, sameRotation.x, sameRotation.y, sameRotation.z);
-      createHolyBible(TOP_Y, sameRotation.x, sameRotation.y, sameRotation.z);
+      createHolyBible(-48, sameRotation.x, sameRotation.y, sameRotation.z); // Bottom book stays at -48
+      createHolyBible(55, sameRotation.x, sameRotation.y, sameRotation.z);  // Top book stays at 55
 
       createConnectingBeam();
       createInitialBlocks();
@@ -291,7 +291,6 @@
     }
 
     function getBlockPosition(index) {
-      // Always use MAX_BLOCKS for consistent spacing from the start
       const t = index / (MAX_BLOCKS - 1);
       const y = BOTTOM_Y + t * (TOP_Y - BOTTOM_Y);
       const angle = index * 0.38;
@@ -316,7 +315,6 @@
       blocks = [];
       const initialCount = 12;
 
-      // Step 1: Create all block objects first
       for (let i = 0; i < initialCount; i++) {
         const ref = ["Genesis 1:1", "John 3:16", "Psalm 23:1", "Matthew 6:9", "Romans 8:28", "Philippians 4:13"][i % 6];
         const newBlock = {
@@ -327,7 +325,6 @@
         blocks.push(newBlock);
       }
 
-      // Step 2: Create meshes with correct positions (now blocks.length is final)
       blocks.forEach((block, index) => {
         createBlockMesh(block, index);
       });
