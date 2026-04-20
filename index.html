@@ -146,11 +146,14 @@
       dirLight.position.set(22, 55, 32);
       scene.add(dirLight);
 
-      // Bottom book (original position)
+      // Bottom book
       createHolyBible(-48, 0.18, 0.25, -0.08);
 
-      // Top book at the top of the beam
+      // Top book
       createHolyBible(55, -0.15, -0.22, 0.06);
+
+      // Central beam connecting both books
+      createConnectingBeam();
 
       createInitialBlocks();
       createParticles();
@@ -165,23 +168,19 @@
       focusBlock(currentIndex);
     }
 
-    // Reusable function to create a white Holy Bible at any height
     function createHolyBible(yPosition, rotX, rotY, rotZ) {
       const bookGroup = new THREE.Group();
       bookGroup.position.set(0, yPosition, 0);
       bookGroup.rotation.set(rotX, rotY, rotZ);
       scene.add(bookGroup);
 
-      // Materials
       const coverMat = new THREE.MeshStandardMaterial({ color: 0xf8f4ed, roughness: 0.5, metalness: 0.12 });
       const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.5 });
       const spineMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 0.4, metalness: 0.2 });
 
-      // Main body
       const bookBody = new THREE.Mesh(new THREE.BoxGeometry(15.5, 3.8, 20.5), coverMat);
       bookGroup.add(bookBody);
 
-      // White trim
       const trimThickness = 0.18;
       const edges = [
         { geo: new THREE.BoxGeometry(15.6, trimThickness, 20.6), pos: [0, 1.95, 0] },
@@ -195,7 +194,6 @@
         bookGroup.add(trim);
       });
 
-      // White corners
       const cornerSize = 1.15;
       const corners = [
         [-7.15, 1.65, -9.65], [7.15, 1.65, -9.65],
@@ -209,12 +207,10 @@
         bookGroup.add(corner);
       });
 
-      // Spine
       const spine = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.9, 20.8), spineMat);
       spine.position.set(-7.9, 0, 0);
       bookGroup.add(spine);
 
-      // Spine lines
       for (let i = 0; i < 5; i++) {
         const line = new THREE.Mesh(new THREE.BoxGeometry(3.25, 0.12, 20.9), whiteMat);
         line.position.set(-7.9, -1.4 + i * 0.7, 0);
@@ -262,18 +258,59 @@
       bookGroup.add(bevelPlane);
     }
 
-    function createInitialBlocks() {
-      blocks = [
-        { id: 1, reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
-        { id: 2, reference: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." },
-        { id: 3, reference: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
-        { id: 4, reference: "Matthew 6:9", text: "Our Father which art in heaven, Hallowed be thy name." },
-        { id: 5, reference: "Romans 8:28", text: "And we know that all things work together for good..." },
-        { id: 6, reference: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." },
-      ];
-      currentIndex = blocks.length - 1;
-      blockMeshes = [];
-      blocks.forEach((block, i) => createBlockMesh(block, i));
+    function createConnectingBeam() {
+      const bottomY = -48;
+      const topY = 55;
+      const beamHeight = topY - bottomY; // 103
+
+      // Main beam cylinder
+      const core = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.68, 0.88, beamHeight, 72),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.93 })
+      );
+      core.position.y = (bottomY + topY) / 2;
+      scene.add(core);
+
+      // Inner glow
+      const glow = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.42, beamHeight * 0.97, 72),
+        new THREE.MeshBasicMaterial({ color: 0xcceeff, transparent: true, opacity: 0.55 })
+      );
+      glow.position.y = core.position.y;
+      scene.add(glow);
+
+      // Rays from bottom book (upward)
+      rays = [];
+      for (let i = 0; i < 145; i++) {
+        const ray = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.028, 0.065, 10.5, 5),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+        );
+        ray.position.set(
+          (Math.random() - 0.5) * 2.8,
+          bottomY + 1.8 + i * 0.78,
+          (Math.random() - 0.5) * 2.8
+        );
+        ray.userData = { speed: 0.52 + Math.random() * 0.9, direction: 1 };
+        scene.add(ray);
+        rays.push(ray);
+      }
+
+      // Rays from top book (downward)
+      for (let i = 0; i < 145; i++) {
+        const ray = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.028, 0.065, 10.5, 5),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+        );
+        ray.position.set(
+          (Math.random() - 0.5) * 2.8,
+          topY - 1.8 - i * 0.78,
+          (Math.random() - 0.5) * 2.8
+        );
+        ray.userData = { speed: 0.52 + Math.random() * 0.9, direction: -1 };
+        scene.add(ray);
+        rays.push(ray);
+      }
     }
 
     function createBlockMesh(block, index) {
@@ -292,6 +329,20 @@
 
       block.mesh = mesh;
       blockMeshes.push(mesh);
+    }
+
+    function createInitialBlocks() {
+      blocks = [
+        { id: 1, reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
+        { id: 2, reference: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." },
+        { id: 3, reference: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
+        { id: 4, reference: "Matthew 6:9", text: "Our Father which art in heaven, Hallowed be thy name." },
+        { id: 5, reference: "Romans 8:28", text: "And we know that all things work together for good..." },
+        { id: 6, reference: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." },
+      ];
+      currentIndex = blocks.length - 1;
+      blockMeshes = [];
+      blocks.forEach((block, i) => createBlockMesh(block, i));
     }
 
     function createParticles() {
@@ -329,8 +380,12 @@
       requestAnimationFrame(animate);
 
       rays.forEach(ray => {
-        ray.position.y += ray.userData.speed || 0.68;
-        if (ray.position.y > 52) ray.position.y = -43;
+        const dir = ray.userData.direction || 1;
+        ray.position.y += (ray.userData.speed || 0.68) * dir;
+
+        if (dir > 0 && ray.position.y > 52) ray.position.y = -43;
+        if (dir < 0 && ray.position.y < -52) ray.position.y = 52;
+
         ray.material.opacity = Math.max(0.1, 1 - Math.abs(ray.position.y) / 78);
       });
 
