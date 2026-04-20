@@ -101,7 +101,7 @@
         <option value="ASV">American Standard Version (ASV)</option>
         <option value="WEB">World English Bible (WEB)</option>
       </select>
-      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">CREATE NEW BLOCK +10 HOLY</button>
+      <button onclick="createNewBlock()" style="width:100%; padding:18px; font-size:1.1rem;">✨ CREATE NEW BLOCK +10 HOLY</button>
     </div>
 
     <div class="nav">
@@ -180,28 +180,29 @@
       core.position.y = -18;
       scene.add(core);
 
-      // === OPEN BIBLE WITH SPINE EXACTLY AT THE BASE OF THE BEAM ===
-      const bookY = -42;   // spine now sits precisely at the bottom of the beam
+      // === OPEN BIBLE WITH SPINE AT THE BASE OF THE BEAM ===
+      const bookY = -42;
+      const bookZ = 0.3;   // ← pushes the entire book slightly in front of the beam
 
       // Left cover
       const coverGeo = new THREE.BoxGeometry(14, 18, 0.8);
       const coverMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e8 });
       const leftCover = new THREE.Mesh(coverGeo, coverMat);
       leftCover.rotation.set(Math.PI / 2, -0.75, 0);
-      leftCover.position.set(-7, bookY, 0);
+      leftCover.position.set(-5.5, bookY, bookZ);
       scene.add(leftCover);
 
       // Right cover
       const rightCover = new THREE.Mesh(coverGeo, coverMat);
       rightCover.rotation.set(Math.PI / 2, 0.75, 0);
-      rightCover.position.set(7, bookY, 0);
+      rightCover.position.set(5.5, bookY, bookZ);
       scene.add(rightCover);
 
       // Spine (centered exactly at the base)
       const spineGeo = new THREE.BoxGeometry(1.8, 18, 2.2);
       const spineMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
       const spine = new THREE.Mesh(spineGeo, spineMat);
-      spine.position.set(0, bookY, 0);
+      spine.position.set(0, bookY, bookZ);
       spine.rotation.x = Math.PI / 2;
       scene.add(spine);
 
@@ -209,33 +210,33 @@
       const bandMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
       for (let i = 0; i < 3; i++) {
         const band = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.2, 2.3), bandMat);
-        band.position.set(0, bookY - 6 + i * 5, 0);
+        band.position.set(0, bookY - 6 + i * 5, bookZ);
         band.rotation.x = Math.PI / 2;
         scene.add(band);
       }
 
-      // Fanned inner pages
+      // Tighter fanned inner pages
       const pageMat = new THREE.MeshBasicMaterial({ color: 0xfaf8f2, side: THREE.DoubleSide });
       for (let i = 0; i < 25; i++) {
         const pageGeo = new THREE.PlaneGeometry(13.2, 17);
         const page = new THREE.Mesh(pageGeo, pageMat);
-        const angle = -0.55 + (i * 0.045);
+        const angle = -0.45 + (i * 0.035);   // tighter fan
         page.rotation.set(Math.PI / 2, angle, 0);
-        page.position.set(-2 + i * 0.18, bookY + 0.5 + i * 0.03, i * 0.025);
+        page.position.set(-1.5 + i * 0.12, bookY + 0.4 + i * 0.02, bookZ + i * 0.015);
         scene.add(page);
       }
 
       // Page text lines
       const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
       for (let i = 0; i < 25; i++) {
-        const angle = -0.55 + (i * 0.045);
-        const pageZ = i * 0.025;
-        const pageY = bookY + 0.5 + i * 0.03;
+        const angle = -0.45 + (i * 0.035);
+        const pageZ = bookZ + i * 0.015;
+        const pageY = bookY + 0.4 + i * 0.02;
 
         for (let j = 0; j < 14; j++) {
           const points = [
-            new THREE.Vector3(-6, pageY + 0.3 + j * 1.05, pageZ),
-            new THREE.Vector3(5.5, pageY + 0.3 + j * 1.05, pageZ)
+            new THREE.Vector3(-5.5, pageY + 0.3 + j * 1.05, pageZ),
+            new THREE.Vector3(5, pageY + 0.3 + j * 1.05, pageZ)
           ];
           const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
           const line = new THREE.Line(lineGeo, lineMat);
@@ -362,11 +363,11 @@
       currentIndex = blocks.length - 1;
       updateNavButtons();
       focusBlock(currentIndex);
-      alert(` New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
+      alert(`✅ New block created!\nVerse: ${newRef}\n+10 HOLY tokens rewarded`);
     };
 
     window.mockWalletConnect = function() {
-      alert(" Wallet connected (demo mode)");
+      alert("✅ Wallet connected (demo mode)");
     };
 
     function toggleDetails() {
