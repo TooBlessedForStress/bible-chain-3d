@@ -124,8 +124,8 @@
     let burstParticles = [];
 
     const MAX_BLOCKS = 22;
-    const BOTTOM_Y = -46;   // ← raised by one position
-    const TOP_Y = 53;       // ← lowered by one position
+    const BOTTOM_Y = -46;
+    const TOP_Y = 53;
 
     function init() {
       const container = document.getElementById('canvas-container');
@@ -150,8 +150,8 @@
       scene.add(dirLight);
 
       const sameRotation = { x: 0.18, y: 0.25, z: -0.08 };
-      createHolyBible(-48, sameRotation.x, sameRotation.y, sameRotation.z); // Bottom book stays at -48
-      createHolyBible(55, sameRotation.x, sameRotation.y, sameRotation.z);  // Top book stays at 55
+      createHolyBible(-48, sameRotation.x, sameRotation.y, sameRotation.z);
+      createHolyBible(55, sameRotation.x, sameRotation.y, sameRotation.z);
 
       createConnectingBeam();
       createInitialBlocks();
@@ -307,6 +307,12 @@
         new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.08 })
       );
       mesh.position.set(pos.x, pos.y, pos.z);
+
+      // Make the BACK of the block face the beam
+      const center = new THREE.Vector3(0, pos.y, 0);
+      mesh.lookAt(center);
+      mesh.rotateY(Math.PI); // flip so front faces outward
+
       scene.add(mesh);
       block.mesh = mesh;
     }
@@ -337,6 +343,11 @@
         if (block.mesh) {
           const pos = getBlockPosition(index);
           block.mesh.position.set(pos.x, pos.y, pos.z);
+
+          // Re-orient so back faces beam
+          const center = new THREE.Vector3(0, pos.y, 0);
+          block.mesh.lookAt(center);
+          block.mesh.rotateY(Math.PI);
         }
       });
     }
@@ -435,13 +446,22 @@
     function focusBlock(index) {
       currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
       const block = blocks[currentIndex];
-      if (block && block.mesh) {
-        const target = block.mesh.position;
-        camera.position.set(target.x + 8.5, target.y + 4.5, target.z + 13);
-        controls.target.copy(target);
-        controls.update();
-        createBurstAt(target);
-      }
+      if (!block || !block.mesh) return;
+
+      const blockPos = block.mesh.position.clone();
+      const center = new THREE.Vector3(0, blockPos.y, 0);
+
+      // Direction from beam to block
+      const dir = blockPos.clone().sub(center).normalize();
+
+      // Camera position directly in front of the block (head-on)
+      const cameraDistance = 9;
+      const cameraPos = blockPos.clone().add(dir.multiplyScalar(cameraDistance));
+
+      camera.position.copy(cameraPos);
+      controls.target.copy(blockPos);
+      controls.update();
+      createBurstAt(blockPos);
     }
 
     window.prevBlock = () => focusBlock(currentIndex - 1);
