@@ -234,38 +234,6 @@
         bookGroup.add(line);
       }
 
-      // === 3D "HOLY BIBLE" LETTERING (white, on front cover) ===
-      // Main text
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 52px Georgia, serif';
-      ctx.textAlign = 'center';
-      ctx.shadowColor = 'rgba(255,255,255,0.8)';
-      ctx.shadowBlur = 12;
-      ctx.fillText('HOLY BIBLE', 256, 145);
-
-      const textTexture = new THREE.CanvasTexture(canvas);
-      const textPlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(9.5, 4.2),
-        new THREE.MeshBasicMaterial({ map: textTexture, transparent: true })
-      );
-      textPlane.position.set(0, 0, 10.45);
-      textPlane.rotation.y = 0.08;
-      bookGroup.add(textPlane);
-
-      // 3D bevel layer (gives real depth)
-      const bevelCanvas = document.createElement('canvas');
-      bevelCanvas.width = 512;
-      bevelCanvas.height = 256;
-      const bctx = bevelCanvas.getContext('2d');
-      bctx.fillStyle = 'rgba(255,255,255,0.35)';
-      bctx.font = 'bold 52px Georgia, serif';
-      bctx.textAlign = 'center';
-      bctx.fillText('HOLY BIBLE', 256, 145);
-
       const bevelTexture = new THREE.CanvasTexture(bevelCanvas);
       const bevelPlane = new THREE.Mesh(
         new THREE.PlaneGeometry(9.7, 4.35),
@@ -281,7 +249,7 @@
         new THREE.CylinderGeometry(0.68, 0.88, beamHeight, 72),
         new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.93 })
       );
-      core.position.y = bookCenterY + (beamHeight / 2) - 1.5;
+      core.position.y = bookCenterY + (beamHeight / 2);
       scene.add(core);
 
       const glow = new THREE.Mesh(
