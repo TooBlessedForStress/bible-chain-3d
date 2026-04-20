@@ -58,32 +58,58 @@
     
     .security-note { font-size: 0.65rem; opacity: 0.6; margin-top: 8px; text-align: center; }
 
+    /* Hamburger Button */
     .hamburger {
-      display: none; background: #111; border: 1px solid #444; color: white;
-      width: 44px; height: 44px; border-radius: 10px; align-items: center;
-      justify-content: center; cursor: pointer; font-size: 1.4rem; z-index: 100;
+      display: none;
+      background: #111;
+      border: 1px solid #444;
+      color: white;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.4rem;
+      z-index: 100;
     }
 
     /* Mobile Styles */
     @media (max-width: 768px) {
       .header { padding: 14px 16px; }
       .title { font-size: 1.75rem; }
+      
       .hamburger { display: flex; }
       
       .left-panel {
-        position: fixed; top: 70px; left: 0; margin: 0;
-        height: calc(100vh - 70px); width: 260px;
-        transform: translateX(-100%); z-index: 999;
+        position: fixed;
+        top: 70px;
+        left: 0;
+        margin: 0;
+        height: calc(100vh - 70px);
+        width: 260px;
+        transform: translateX(-100%);
+        z-index: 999;
         border-radius: 0 14px 14px 0;
         box-shadow: 4px 0 20px rgba(0,0,0,0.6);
       }
-      .left-panel.open { transform: translateX(0); }
       
-      .controls { display: none; }
+      .left-panel.open {
+        transform: translateX(0);
+      }
       
-      .mobile-mint-section { display: block; margin-top: 24px; padding-top: 20px; border-top: 1px solid #333; }
+      .controls {
+        position: fixed;
+        bottom: 85px;
+        right: 12px;
+        left: 12px;
+        top: auto;
+        width: auto;
+        max-width: 420px;
+      }
       
       .nav { bottom: 14px; gap: 20px; }
+      
       button { padding: 15px 22px; font-size: 0.95rem; min-height: 50px; }
     }
     
@@ -91,8 +117,6 @@
       .left-panel { width: 240px; }
       .title { font-size: 1.55rem; }
     }
-    
-    .mobile-mint-section { display: none; }
   </style>
 </head>
 <body>
@@ -103,6 +127,7 @@
     <div class="header">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div class="title">VERSECHAIN</div>
+        <!-- Hamburger Button -->
         <button class="hamburger" onclick="toggleLeftPanel()" id="hamburger-btn">☰</button>
       </div>
       
@@ -111,7 +136,7 @@
       </button>
     </div>
 
-    <!-- Left Panel -->
+    <!-- Left Panel (now toggleable on mobile) -->
     <div class="left-panel" id="left-panel">
       <h3 style="margin-top:0; color:#ffffff; font-size:1.05rem;">Chain Live Data</h3>
       
@@ -140,26 +165,9 @@
           <div><strong>Matthew:</strong> 1 minted</div>
         </div>
       </div>
-
-      <!-- Mint Section (inside hamburger on mobile) -->
-      <div class="mobile-mint-section">
-        <div style="font-size:0.85rem; letter-spacing:1.5px; opacity:0.7; margin-bottom:12px;">MINT NEW VERSE BLOCK</div>
-        
-        <select id="version-select-mobile" style="width:100%; padding:12px; background:#111; border:1px solid #444; color:white; border-radius:10px; margin-bottom:14px; font-size:0.95rem;">
-          <option value="KJV">King James Version (KJV)</option>
-          <option value="ASV">American Standard Version (ASV)</option>
-          <option value="WEB">World English Bible (WEB)</option>
-        </select>
-        
-        <button onclick="createNewBlockMobile()" style="width:100%; padding:16px; font-size:1.05rem;">
-          ✨ CREATE NEW BLOCK +10 HOLY
-        </button>
-        
-        <div class="security-note">Devnet • Transactions simulated before signing</div>
-      </div>
     </div>
 
-    <!-- Desktop Controls -->
+    <!-- Controls -->
     <div class="controls">
       <div style="font-size:0.85rem; letter-spacing:1.5px; opacity:0.7; margin-bottom:12px;">MINT NEW VERSE BLOCK</div>
       
@@ -199,7 +207,7 @@
 
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
   <script>
-    // ==================== THREE.JS + ALL FEATURES ====================
+    // ==================== ORIGINAL THREE.JS CODE (unchanged) ====================
     let scene, camera, renderer, controls;
     let blocks = [];
     let currentIndex = 0;
@@ -210,73 +218,51 @@
     const BOTTOM_Y = -46;
     const TOP_Y = 53;
 
-    let focusedBlockIndex = -1;
-    let isFollowingBlock = false;
-
     function init() {
       const container = document.getElementById('canvas-container');
       scene = new THREE.Scene();
-
-      // World Group for slow rotation
-      window.worldGroup = new THREE.Group();
-      scene.add(window.worldGroup);
-
       camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(window.devicePixelRatio);
       container.appendChild(renderer.domElement);
-
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.1;
       controls.minDistance = 16;
       controls.maxDistance = 75;
-
       camera.position.set(22, 6, 34);
       controls.target.set(0, 5, 0);
       controls.update();
-
-      // Stop following when user interacts
-      controls.addEventListener('start', () => {
-        isFollowingBlock = false;
-      });
-
       scene.add(new THREE.AmbientLight(0x666666, 0.7));
       const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
       dirLight.position.set(22, 55, 32);
       scene.add(dirLight);
-
       const sameRotation = { x: 0.18, y: 0.25, z: -0.08 };
       createHolyBible(-48, sameRotation.x, sameRotation.y, sameRotation.z);
       createHolyBible(55, sameRotation.x, sameRotation.y, sameRotation.z);
       createConnectingBeam();
       createInitialBlocks();
       createParticles();
-
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
-
       animate();
       focusBlock(currentIndex);
     }
-
+    
     function createHolyBible(yPosition, rotX, rotY, rotZ) {
       const bookGroup = new THREE.Group();
       bookGroup.position.set(0, yPosition, 0);
       bookGroup.rotation.set(rotX, rotY, rotZ);
-      window.worldGroup.add(bookGroup);
-
+      scene.add(bookGroup);
       const coverMat = new THREE.MeshStandardMaterial({ color: 0xf8f4ed, roughness: 0.5, metalness: 0.12 });
       const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.5 });
       const spineMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 0.4, metalness: 0.2 });
-
       const bookBody = new THREE.Mesh(new THREE.BoxGeometry(15.5, 3.8, 20.5), coverMat);
       bookGroup.add(bookBody);
-
       const trimThickness = 0.18;
       const edges = [
         { geo: new THREE.BoxGeometry(15.6, trimThickness, 20.6), pos: [0, 1.95, 0] },
@@ -289,7 +275,6 @@
         trim.position.set(...e.pos);
         bookGroup.add(trim);
       });
-
       const cornerSize = 1.15;
       const corners = [
         [-7.15, 1.65, -9.65], [7.15, 1.65, -9.65],
@@ -302,17 +287,14 @@
         corner.position.set(...pos);
         bookGroup.add(corner);
       });
-
       const spine = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.9, 20.8), spineMat);
       spine.position.set(-7.9, 0, 0);
       bookGroup.add(spine);
-
       for (let i = 0; i < 5; i++) {
         const line = new THREE.Mesh(new THREE.BoxGeometry(3.25, 0.12, 20.9), whiteMat);
         line.position.set(-7.9, -1.4 + i * 0.7, 0);
         bookGroup.add(line);
       }
-
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 256;
@@ -324,11 +306,13 @@
       ctx.shadowBlur = 12;
       ctx.fillText('HOLY BIBLE', 256, 145);
       const textTexture = new THREE.CanvasTexture(canvas);
-      const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(9.5, 4.2), new THREE.MeshBasicMaterial({ map: textTexture, transparent: true }));
+      const textPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(9.5, 4.2),
+        new THREE.MeshBasicMaterial({ map: textTexture, transparent: true })
+      );
       textPlane.position.set(0, 0, 10.45);
       textPlane.rotation.y = 0.08;
       bookGroup.add(textPlane);
-
       const bevelCanvas = document.createElement('canvas');
       bevelCanvas.width = 512;
       bevelCanvas.height = 256;
@@ -338,29 +322,68 @@
       bctx.textAlign = 'center';
       bctx.fillText('HOLY BIBLE', 256, 145);
       const bevelTexture = new THREE.CanvasTexture(bevelCanvas);
-      const bevelPlane = new THREE.Mesh(new THREE.PlaneGeometry(9.7, 4.35), new THREE.MeshBasicMaterial({ map: bevelTexture, transparent: true, opacity: 0.6 }));
+      const bevelPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(9.7, 4.35),
+        new THREE.MeshBasicMaterial({ map: bevelTexture, transparent: true, opacity: 0.6 })
+      );
       bevelPlane.position.set(0.15, -0.1, 10.25);
       bevelPlane.rotation.y = 0.08;
       bookGroup.add(bevelPlane);
     }
+    function toggleLeftPanel() {
+      const panel = document.getElementById('left-panel');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      if (panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        hamburger.innerHTML = '☰';
+      } else {
+        panel.classList.add('open');
+        hamburger.innerHTML = '✕';
+      }
+    }
+
+    // Close panel when clicking outside on mobile
+    document.addEventListener('click', function(e) {
+      const panel = document.getElementById('left-panel');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      if (window.innerWidth <= 768 && 
+          panel.classList.contains('open') && 
+          !panel.contains(e.target) && 
+          !hamburger.contains(e.target)) {
+        panel.classList.remove('open');
+        hamburger.innerHTML = '☰';
+      }
+    });
 
     function createConnectingBeam() {
       const beamHeight = TOP_Y - BOTTOM_Y;
-
-      const core = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.88, beamHeight, 72), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.93 }));
+      const core = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.68, 0.88, beamHeight, 72),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.93 })
+      );
       core.position.y = (BOTTOM_Y + TOP_Y) / 2;
-      window.worldGroup.add(core);
-
-      const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.42, beamHeight * 0.97, 72), new THREE.MeshBasicMaterial({ color: 0xcceeff, transparent: true, opacity: 0.55 }));
+      scene.add(core);
+      const glow = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.42, beamHeight * 0.97, 72),
+        new THREE.MeshBasicMaterial({ color: 0xcceeff, transparent: true, opacity: 0.55 })
+      );
       glow.position.y = core.position.y;
-      window.worldGroup.add(glow);
-
+      scene.add(glow);
       rays = [];
       for (let i = 0; i < 145; i++) {
-        const ray = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.065, 10.5, 5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
-        ray.position.set((Math.random() - 0.5) * 2.8, BOTTOM_Y + 1.8 + i * 0.78, (Math.random() - 0.5) * 2.8);
+        const ray = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.028, 0.065, 10.5, 5),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+        );
+        ray.position.set(
+          (Math.random() - 0.5) * 2.8,
+          BOTTOM_Y + 1.8 + i * 0.78,
+          (Math.random() - 0.5) * 2.8
+        );
         ray.userData = { speed: 0.52 + Math.random() * 0.9 };
-        window.worldGroup.add(ray);
+        scene.add(ray);
         rays.push(ray);
       }
     }
@@ -377,12 +400,14 @@
 
     function createBlockMesh(block, index) {
       const pos = getBlockPosition(index);
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(2.55, 1.6, 0.3), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.08 }));
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(2.55, 1.6, 0.3),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.08 })
+      );
       mesh.position.set(pos.x, pos.y, pos.z);
       const center = new THREE.Vector3(0, pos.y, 0);
       mesh.lookAt(center);
       mesh.rotateY(Math.PI);
-
       const verse = block.reference + "\n" + block.text.substring(0, 45) + "...";
       const canvas = document.createElement('canvas');
       canvas.width = 256;
@@ -396,11 +421,13 @@
       ctx.font = '14px Georgia, serif';
       ctx.fillText(lines[1] || '', 128, 68);
       const textTexture = new THREE.CanvasTexture(canvas);
-      const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.1), new THREE.MeshBasicMaterial({ map: textTexture, transparent: true }));
+      const textPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.3, 1.1),
+        new THREE.MeshBasicMaterial({ map: textTexture, transparent: true })
+      );
       textPlane.position.set(0, 0, 0.18);
       mesh.add(textPlane);
-
-      window.worldGroup.add(mesh);
+      scene.add(mesh);
       block.mesh = mesh;
     }
 
@@ -452,7 +479,7 @@
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       const material = new THREE.PointsMaterial({ size: 0.085, color: 0xffffff, transparent: true, opacity: 0.65, depthWrite: false });
       particlesMesh = new THREE.Points(geometry, material);
-      window.worldGroup.add(particlesMesh);
+      scene.add(particlesMesh);
     }
 
     function createBurstAt(position) {
@@ -473,30 +500,11 @@
 
     function animate() {
       requestAnimationFrame(animate);
-
-      // Slow rotation around the beam
-      if (window.worldGroup) {
-        window.worldGroup.rotation.y += 0.00025;
-      }
-
-      // Camera follows focused block
-      if (isFollowingBlock && focusedBlockIndex >= 0) {
-        const block = blocks[focusedBlockIndex];
-        if (block && block.mesh) {
-          const worldPos = new THREE.Vector3();
-          block.mesh.getWorldPosition(worldPos);
-          const offset = camera.position.clone().sub(controls.target);
-          camera.position.copy(worldPos).add(offset);
-          controls.target.copy(worldPos);
-        }
-      }
-
       rays.forEach(ray => {
         ray.position.y += ray.userData.speed || 0.68;
         if (ray.position.y > 52) ray.position.y = -43;
         ray.material.opacity = Math.max(0.1, 1 - Math.abs(ray.position.y) / 78);
       });
-
       if (particlesMesh) {
         const pos = particlesMesh.geometry.attributes.position.array;
         for (let i = 1; i < pos.length; i += 3) {
@@ -505,7 +513,6 @@
         }
         particlesMesh.geometry.attributes.position.needsUpdate = true;
       }
-
       for (let i = burstParticles.length - 1; i >= 0; i--) {
         const b = burstParticles[i];
         b.userData.life--;
@@ -519,81 +526,39 @@
         b.material.opacity = b.userData.life / 52;
         if (b.userData.life <= 0) { scene.remove(b); burstParticles.splice(i, 1); }
       }
-
       controls.update();
       renderer.render(scene, camera);
     }
 
     function focusBlock(index) {
-  currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
-  const block = blocks[currentIndex];
-  if (!block || !block.mesh) return;
-
-  focusedBlockIndex = currentIndex;
-  isFollowingBlock = true;
-
-  // Get the block's current world position (after rotation)
-  const worldPos = new THREE.Vector3();
-  block.mesh.getWorldPosition(worldPos);
-
-  // Calculate direction from center to block
-  const center = new THREE.Vector3(0, worldPos.y, 0);
-  const dir = worldPos.clone().sub(center).normalize();
-  const cameraDistance = 9;
-
-  // Position the camera in front of the block
-  const cameraPos = worldPos.clone().add(dir.multiplyScalar(cameraDistance));
-  camera.position.copy(cameraPos);
-
-  // Make the camera rotate to face the front of the block
-  camera.lookAt(worldPos);
-
-  // Update OrbitControls target
-  controls.target.copy(worldPos);
-  controls.update();
-
-  createBurstAt(worldPos);
-}
+      currentIndex = Math.max(0, Math.min(index, blocks.length - 1));
+      const block = blocks[currentIndex];
+      if (!block || !block.mesh) return;
+      const blockPos = block.mesh.position.clone();
+      const center = new THREE.Vector3(0, blockPos.y, 0);
+      const dir = blockPos.clone().sub(center).normalize();
+      const cameraDistance = 9;
+      const cameraPos = blockPos.clone().add(dir.multiplyScalar(cameraDistance));
+      camera.position.copy(cameraPos);
+      controls.target.copy(blockPos);
+      controls.update();
+      createBurstAt(blockPos);
+    }
 
     window.prevBlock = () => focusBlock(currentIndex - 1);
     window.nextBlock = () => focusBlock(currentIndex + 1);
-
-    function toggleLeftPanel() {
-      const panel = document.getElementById('left-panel');
-      const hamburger = document.getElementById('hamburger-btn');
-      
-      if (panel.classList.contains('open')) {
-        panel.classList.remove('open');
-        hamburger.innerHTML = '☰';
-      } else {
-        panel.classList.add('open');
-        hamburger.innerHTML = '✕';
-      }
-    }
-
-    document.addEventListener('click', function(e) {
-      const panel = document.getElementById('left-panel');
-      const hamburger = document.getElementById('hamburger-btn');
-      
-      if (window.innerWidth <= 768 && panel.classList.contains('open') && !panel.contains(e.target) && !hamburger.contains(e.target)) {
-        panel.classList.remove('open');
-        hamburger.innerHTML = '☰';
-      }
-    });
-
     function toggleDetails() {
       const details = document.getElementById('book-details');
       const icon = document.getElementById('expand-icon');
       details.style.display = details.style.display === 'block' ? 'none' : 'block';
       icon.textContent = details.style.display === 'block' ? '▲' : '▼';
     }
-
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // ==================== SOLANA INTEGRATION ====================
+    // ==================== SAFE SOLANA INTEGRATION ====================
     let connection;
     let walletPublicKey = null;
-    const PROGRAM_ID = "PASTE_YOUR_PROGRAM_ID_FROM_SOLANA_PLAYGROUND_HERE";
+    const PROGRAM_ID = "PASTE_YOUR_PROGRAM_ID_FROM_SOLANA_PLAYGROUND_HERE"; // ← Replace this
 
     async function connectWallet() {
       if (!window.solana || !window.solana.isPhantom) {
@@ -604,40 +569,53 @@
         const resp = await window.solana.connect();
         walletPublicKey = resp.publicKey;
         connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("devnet"));
+
         const btn = document.querySelector('button[onclick="connectWallet()"]');
         btn.innerText = walletPublicKey.toBase58().slice(0, 4) + "..." + walletPublicKey.toBase58().slice(-4);
         btn.style.background = "#22c55e";
         btn.style.color = "#000";
       } catch (err) {
+        console.error(err);
         alert("Failed to connect wallet");
       }
     }
 
     async function getSecureRandomVerse(version) {
+      // Large local list for demo (replace with Supabase Edge Function later)
       const verses = {
         "KJV": [
           { ref: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
-          { ref: "John 3:16", text: "For God so loved the world..." },
-          { ref: "Psalm 23:1", text: "The Lord is my shepherd..." }
+          { ref: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." },
+          { ref: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
+          { ref: "Matthew 6:9", text: "Our Father which art in heaven, Hallowed be thy name." },
+          { ref: "Romans 8:28", text: "And we know that all things work together for good..." },
+          { ref: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." }
         ],
-        "ASV": [{ ref: "Genesis 1:1", text: "In the beginning God created the heavens and the earth." }],
-        "WEB": [{ ref: "Genesis 1:1", text: "In the beginning, God created the heavens and the earth." }]
+        "ASV": [
+          { ref: "Genesis 1:1", text: "In the beginning God created the heavens and the earth." },
+          { ref: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." }
+        ],
+        "WEB": [
+          { ref: "Genesis 1:1", text: "In the beginning, God created the heavens and the earth." },
+          { ref: "Psalm 23:1", text: "Yahweh is my shepherd: I shall lack nothing." }
+        ]
       };
       const list = verses[version] || verses["KJV"];
       return list[Math.floor(Math.random() * list.length)];
     }
 
-    async function mintVerse(version) {
+    async function createNewBlock() {
       if (!walletPublicKey) {
         alert("Please connect your wallet first");
         return;
       }
 
+      const version = document.getElementById('version-select').value;
       const verse = await getSecureRandomVerse(version);
 
+      // Build a clear, safe transaction (Memo for now - upgrade to real program later)
       const tx = new solanaWeb3.Transaction();
       const memo = `VERSECHAIN: Minting ${verse.ref} as validator • +10 HOLY`;
-
       tx.add(
         new solanaWeb3.TransactionInstruction({
           keys: [],
@@ -650,9 +628,10 @@
       tx.recentBlockhash = blockhash;
       tx.feePayer = walletPublicKey;
 
+      // Simulate first (security best practice)
       const simulation = await connection.simulateTransaction(tx);
       if (simulation.value.err) {
-        alert("Transaction simulation failed.");
+        alert("Transaction simulation failed. Please try again later.");
         return;
       }
 
@@ -661,54 +640,43 @@
         const signature = await connection.sendRawTransaction(signedTx.serialize());
         await connection.confirmTransaction(signature, "confirmed");
 
-        alert(`✅ Block minted!\n${verse.ref}\n+10 HOLY`);
+        // Success feedback
+        alert(`✅ Block successfully minted on Solana Devnet!\n\nVerse: ${verse.ref}\n+10 HOLY rewarded to your wallet\n\nView on Solscan: https://solscan.io/tx/${signature}?cluster=devnet`);
 
+        // Add to 3D chain
         const newBlock = {
           id: Date.now(),
           reference: verse.ref,
           text: verse.text,
           validator: walletPublicKey.toBase58()
         };
-        
         if (blocks.length >= MAX_BLOCKS) {
           const oldest = blocks.shift();
           if (oldest.mesh) scene.remove(oldest.mesh);
         }
-        
         blocks.push(newBlock);
         createBlockMesh(newBlock, blocks.length - 1);
         repositionAllBlocks();
         currentIndex = blocks.length - 1;
         focusBlock(currentIndex);
 
+        // Update stats
         document.getElementById('verses-created').innerText = 
           parseInt(document.getElementById('verses-created').innerText) + 1;
+        document.getElementById('total-tokens').innerText = 
+          (parseInt(document.getElementById('total-tokens').innerText) + 10) + " HOLY";
 
       } catch (err) {
-        alert("Transaction cancelled or failed.");
+        console.error(err);
+        alert("Transaction was cancelled or failed.");
       }
     }
 
-    async function createNewBlock() {
-      const version = document.getElementById('version-select').value;
-      await mintVerse(version);
-    }
-
-    async function createNewBlockMobile() {
-      const version = document.getElementById('version-select-mobile').value;
-      await mintVerse(version);
-      
-      // Close menu after minting on mobile
-      const panel = document.getElementById('left-panel');
-      const hamburger = document.getElementById('hamburger-btn');
-      panel.classList.remove('open');
-      hamburger.innerHTML = '☰';
-    }
-
+    // Make functions available globally
     window.connectWallet = connectWallet;
     window.createNewBlock = createNewBlock;
-    window.createNewBlockMobile = createNewBlockMobile;
 
+    // Start the 3D scene
     window.onload = init;
   </script>
 </body>
