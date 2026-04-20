@@ -146,7 +146,12 @@
       dirLight.position.set(22, 55, 32);
       scene.add(dirLight);
 
-      createPureWhiteHolyBible();
+      // Bottom book (original position)
+      createHolyBible(-48, 0.18, 0.25, -0.08);
+
+      // Top book at the top of the beam
+      createHolyBible(55, -0.15, -0.22, 0.06);
+
       createInitialBlocks();
       createParticles();
 
@@ -160,38 +165,23 @@
       focusBlock(currentIndex);
     }
 
-    function createPureWhiteHolyBible() {
-      const bookCenterY = -48;
+    // Reusable function to create a white Holy Bible at any height
+    function createHolyBible(yPosition, rotX, rotY, rotZ) {
       const bookGroup = new THREE.Group();
-      bookGroup.position.set(0, bookCenterY, 0);
-      bookGroup.rotation.set(0.18, 0.25, -0.08);
+      bookGroup.position.set(0, yPosition, 0);
+      bookGroup.rotation.set(rotX, rotY, rotZ);
       scene.add(bookGroup);
 
-      // === ALL-WHITE MATERIALS ===
-      const coverMat = new THREE.MeshStandardMaterial({ 
-        color: 0xf8f4ed, 
-        roughness: 0.5, 
-        metalness: 0.12 
-      });
-      const whiteMat = new THREE.MeshStandardMaterial({ 
-        color: 0xffffff, 
-        roughness: 0.25, 
-        metalness: 0.5 
-      });
-      const spineMat = new THREE.MeshStandardMaterial({ 
-        color: 0xe8e0d0, 
-        roughness: 0.4, 
-        metalness: 0.2 
-      });
+      // Materials
+      const coverMat = new THREE.MeshStandardMaterial({ color: 0xf8f4ed, roughness: 0.5, metalness: 0.12 });
+      const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.5 });
+      const spineMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 0.4, metalness: 0.2 });
 
-      // Main book body
-      const bookBody = new THREE.Mesh(
-        new THREE.BoxGeometry(15.5, 3.8, 20.5),
-        coverMat
-      );
+      // Main body
+      const bookBody = new THREE.Mesh(new THREE.BoxGeometry(15.5, 3.8, 20.5), coverMat);
       bookGroup.add(bookBody);
 
-      // White edge trim
+      // White trim
       const trimThickness = 0.18;
       const edges = [
         { geo: new THREE.BoxGeometry(15.6, trimThickness, 20.6), pos: [0, 1.95, 0] },
@@ -205,7 +195,7 @@
         bookGroup.add(trim);
       });
 
-      // White corner accents
+      // White corners
       const cornerSize = 1.15;
       const corners = [
         [-7.15, 1.65, -9.65], [7.15, 1.65, -9.65],
@@ -220,22 +210,18 @@
       });
 
       // Spine
-      const spine = new THREE.Mesh(
-        new THREE.BoxGeometry(3.2, 3.9, 20.8),
-        spineMat
-      );
+      const spine = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.9, 20.8), spineMat);
       spine.position.set(-7.9, 0, 0);
       bookGroup.add(spine);
 
-      // White spine lines
+      // Spine lines
       for (let i = 0; i < 5; i++) {
         const line = new THREE.Mesh(new THREE.BoxGeometry(3.25, 0.12, 20.9), whiteMat);
         line.position.set(-7.9, -1.4 + i * 0.7, 0);
         bookGroup.add(line);
       }
 
-      // === 3D "HOLY BIBLE" LETTERING (white, on front cover) ===
-      // Main text
+      // 3D "HOLY BIBLE" text
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 256;
@@ -245,6 +231,7 @@
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(255,255,255,0.8)';
       ctx.shadowBlur = 12;
+      ctx.fillText('HOLY BIBLE', 256, 145);
 
       const textTexture = new THREE.CanvasTexture(canvas);
       const textPlane = new THREE.Mesh(
@@ -255,7 +242,7 @@
       textPlane.rotation.y = 0.08;
       bookGroup.add(textPlane);
 
-      // 3D bevel layer (gives real depth)
+      // 3D bevel
       const bevelCanvas = document.createElement('canvas');
       bevelCanvas.width = 512;
       bevelCanvas.height = 256;
@@ -263,48 +250,30 @@
       bctx.fillStyle = 'rgba(255,255,255,0.35)';
       bctx.font = 'bold 52px Georgia, serif';
       bctx.textAlign = 'center';
+      bctx.fillText('HOLY BIBLE', 256, 145);
 
       const bevelTexture = new THREE.CanvasTexture(bevelCanvas);
       const bevelPlane = new THREE.Mesh(
         new THREE.PlaneGeometry(9.7, 4.35),
         new THREE.MeshBasicMaterial({ map: bevelTexture, transparent: true, opacity: 0.6 })
       );
-      bevelPlane.position.set(0.15, -0.1, 10.25);   // slightly behind + offset
+      bevelPlane.position.set(0.15, -0.1, 10.25);
       bevelPlane.rotation.y = 0.08;
       bookGroup.add(bevelPlane);
+    }
 
-      // === HOLY BEAM + RAYS FROM CENTER OF BOOK ===
-      const beamHeight = 118;
-      const core = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.68, 0.88, beamHeight, 72),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.93 })
-      );
-      core.position.y = bookCenterY + (beamHeight / 2)-.01;
-      scene.add(core);
-
-      const glow = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.32, 0.42, beamHeight * 0.97, 72),
-        new THREE.MeshBasicMaterial({ color: 0xcceeff, transparent: true, opacity: 0.55 })
-      );
-      glow.position.y = core.position.y;
-      scene.add(glow);
-
-      // Side rays — now starting from center of book
-      rays = [];
-      for (let i = 0; i < 145; i++) {
-        const ray = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.028, 0.065, 10.5, 5),
-          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
-        );
-        ray.position.set(
-          (Math.random() - 0.5) * 2.8,
-          bookCenterY + 1.8 + i * 0.78,     // ← starts from center
-          (Math.random() - 0.5) * 2.8
-        );
-        ray.userData = { speed: 0.52 + Math.random() * 0.9 };
-        scene.add(ray);
-        rays.push(ray);
-      }
+    function createInitialBlocks() {
+      blocks = [
+        { id: 1, reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
+        { id: 2, reference: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." },
+        { id: 3, reference: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
+        { id: 4, reference: "Matthew 6:9", text: "Our Father which art in heaven, Hallowed be thy name." },
+        { id: 5, reference: "Romans 8:28", text: "And we know that all things work together for good..." },
+        { id: 6, reference: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." },
+      ];
+      currentIndex = blocks.length - 1;
+      blockMeshes = [];
+      blocks.forEach((block, i) => createBlockMesh(block, i));
     }
 
     function createBlockMesh(block, index) {
@@ -325,26 +294,12 @@
       blockMeshes.push(mesh);
     }
 
-    function createInitialBlocks() {
-      blocks = [
-        { id: 1, reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
-        { id: 2, reference: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son..." },
-        { id: 3, reference: "Psalm 23:1", text: "The Lord is my shepherd; I shall not want." },
-        { id: 4, reference: "Matthew 6:9", text: "Our Father which art in heaven, Hallowed be thy name." },
-        { id: 5, reference: "Romans 8:28", text: "And we know that all things work together for good..." },
-        { id: 6, reference: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." },
-      ];
-      currentIndex = blocks.length - 1;
-      blockMeshes = [];
-      blocks.forEach((block, i) => createBlockMesh(block, i));
-    }
-
     function createParticles() {
       const count = 2600;
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(count * 3);
       for (let i = 0; i < count * 3; i += 3) {
-        positions[i]     = (Math.random() - 0.5) * 80;
+        positions[i] = (Math.random() - 0.5) * 80;
         positions[i + 1] = Math.random() * -155 - 45;
         positions[i + 2] = (Math.random() - 0.5) * 70;
       }
